@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A Windows-style OS portfolio using the Portfolio_OS_Theme visual system and image library."
+    />
+    <title>Desktop Portfolio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#desktop-icons">Skip to desktop shortcuts</a>
+
+    <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+
+    <section class="lock-screen" id="lockScreen" aria-label="Lock screen">
+      <div class="lock-screen-overlay">
+        <img
+          class="lock-screen-logo"
+          src="assets/images/baseImages/windows_10.svg"
+          alt=""
+          aria-hidden="true"
+        />
+        <p class="lock-screen-time" id="lockScreenTime">9:59</p>
+        <p class="lock-screen-date" id="lockScreenDate">Wednesday, March 25</p>
+        <button class="unlock-button" id="unlockButton" type="button">Click to unlock desktop</button>
+      </div>
+    </section>
+
+    <main class="desktop-shell" id="desktopShell" aria-label="Portfolio desktop">
+      <section class="desktop-icons" id="desktop-icons" aria-label="Desktop shortcuts">
+        <button class="desktop-icon" type="button" data-open-window="aboutWindow" aria-label="Open About Me">
+          <img class="desktop-icon-image" src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">About Me</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="codingWindow" aria-label="Open VSCode">
+          <img class="desktop-icon-image" src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">VSCode</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
+          <img class="desktop-icon-image" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Contact Me</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="githubWindow" aria-label="Open Chrome">
+          <img class="desktop-icon-image" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Chrome</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="detailWindow" aria-label="Open Word">
+          <img class="desktop-icon-image" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Word</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="solidworksWindow" aria-label="Open Spreadsheet">
+          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Spreadsheet</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="settingsWindow" aria-label="Open Settings">
+          <img class="desktop-icon-image" src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Settings</span>
+        </button>
+      </section>
+
+      <section
+        class="window window-compact"
+        id="aboutWindow"
+        data-window-title="About Me"
+        data-x="250"
+        data-y="70"
+        aria-labelledby="aboutTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
+            <h2 id="aboutTitle">About Me</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="aboutWindow" aria-label="Minimize About Me">_</button>
+            <button class="window-control close-window" type="button" data-close-window="aboutWindow" aria-label="Close About Me">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <p class="window-lead" id="aboutSummary"></p>
+          <p class="detail-copy">
+            This portfolio now uses the original Portfolio_OS_Theme Windows visual language, including the same desktop
+            wallpaper system, taskbar feel, lock screen image, and app icon set.
+          </p>
+          <ul class="about-list" id="profileQuickFacts"></ul>
+        </div>
+      </section>
+
+      <section
+        class="window window-wide"
+        id="codingWindow"
+        data-window-title="VSCode"
+        data-x="310"
+        data-y="104"
+        aria-labelledby="codingTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+            <h2 id="codingTitle">VSCode</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="codingWindow" aria-label="Minimize VSCode">_</button>
+            <button class="window-control close-window" type="button" data-close-window="codingWindow" aria-label="Close VSCode">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <div class="tools-row">
+            <label for="searchProjects">Search</label>
+            <input id="searchProjects" type="search" placeholder="Search by title, tags, or tools" />
+            <label for="filterTools">Filter</label>
+            <select id="filterTools">
+              <option value="all">All tools</option>
+            </select>
+          </div>
+          <div class="project-grid" id="codingProjectsGrid"></div>
+        </div>
+      </section>
+
+      <section
+        class="window window-wide"
+        id="solidworksWindow"
+        data-window-title="Spreadsheet"
+        data-x="385"
+        data-y="132"
+        aria-labelledby="solidworksTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+            <h2 id="solidworksTitle">Spreadsheet</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="solidworksWindow" aria-label="Minimize Spreadsheet">_</button>
+            <button class="window-control close-window" type="button" data-close-window="solidworksWindow" aria-label="Close Spreadsheet">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <div class="project-grid" id="solidworksProjectsGrid"></div>
+        </div>
+      </section>
+
+      <section
+        class="window window-compact"
+        id="githubWindow"
+        data-window-title="Chrome"
+        data-x="470"
+        data-y="110"
+        aria-labelledby="githubTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+            <h2 id="githubTitle">Chrome</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="githubWindow" aria-label="Minimize Chrome">_</button>
+            <button class="window-control close-window" type="button" data-close-window="githubWindow" aria-label="Close Chrome">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <p class="window-lead">Launch my GitHub profile the same way the original OS theme launches browser content.</p>
+          <a id="githubLink" class="external-link" href="#" target="_blank" rel="noreferrer">Open GitHub profile</a>
+          <p class="muted">Use this as the browser shortcut for repositories, experiments, and pinned work.</p>
+        </div>
+      </section>
+
+      <section
+        class="window window-medium"
+        id="contactWindow"
+        data-window-title="Contact Me"
+        data-x="550"
+        data-y="82"
+        aria-labelledby="contactTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+            <h2 id="contactTitle">Contact Me</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="contactWindow" aria-label="Minimize Contact Me">_</button>
+            <button class="window-control close-window" type="button" data-close-window="contactWindow" aria-label="Close Contact Me">x</button>
+          </div>
+        </div>
+        <div class="window-content contact-grid">
+          <div>
+            <p class="window-lead">Reach out directly or open the portfolio documents below.</p>
+            <ul class="contact-list">
+              <li>Email: <a id="emailLink" href="#">you@example.com</a></li>
+              <li>LinkedIn: <a id="linkedinLink" href="#" target="_blank" rel="noreferrer">Profile</a></li>
+              <li>GitHub: <a id="contactGithubLink" href="#" target="_blank" rel="noreferrer">Repositories</a></li>
+              <li>Resume: <a id="resumeLink" href="#" target="_blank" rel="noreferrer">Open document</a></li>
+            </ul>
+            <div class="social-links">
+              <a class="social-link" id="emailSocialLink" href="#" aria-label="Send email">
+                <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
+              </a>
+              <a class="social-link" id="linkedinSocialLink" href="#" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
+                <img src="assets/images/social/linkedin.svg" alt="" aria-hidden="true" />
+              </a>
+              <a class="social-link" id="githubSocialLink" href="#" target="_blank" rel="noreferrer" aria-label="Open GitHub">
+                <img src="assets/images/social/github.svg" alt="" aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+          <div class="contact-sidecard">
+            <img class="contact-avatar" src="assets/images/baseImages/default_avatar.svg" alt="" aria-hidden="true" />
+            <img class="contact-scan" src="assets/images/baseImages/scanCode.png" alt="Scan code decoration" />
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="window window-medium"
+        id="detailWindow"
+        data-window-title="Word"
+        data-x="300"
+        data-y="168"
+        aria-labelledby="detailTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+            <h2 id="detailTitle">Word</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="detailWindow" aria-label="Minimize Word">_</button>
+            <button class="window-control close-window" type="button" data-close-window="detailWindow" aria-label="Close Word">x</button>
+          </div>
+        </div>
+        <div class="window-content" id="detailContent"></div>
+      </section>
+
+      <section
+        class="window window-medium"
+        id="settingsWindow"
+        data-window-title="Settings"
+        data-x="610"
+        data-y="136"
+        aria-labelledby="settingsTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+            <h2 id="settingsTitle">Settings</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="settingsWindow" aria-label="Minimize Settings">_</button>
+            <button class="window-control close-window" type="button" data-close-window="settingsWindow" aria-label="Close Settings">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <p class="window-lead">Desktop & Wallpaper</p>
+          <p class="detail-copy">These are the original Portfolio_OS_Theme desktop wallpapers copied into this portfolio.</p>
+          <div class="wallpaper-grid" id="wallpaperPicker">
+            <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/default_wallpaper.jpg">
+              <img class="wallpaper-preview" src="assets/images/wallpapers/default_wallpaper.jpg" alt="Default wallpaper preview" />
+              <span>Default</span>
+              <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
+            </button>
+            <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/wallpaper1.jpg">
+              <img class="wallpaper-preview" src="assets/images/wallpapers/wallpaper1.jpg" alt="Wallpaper one preview" />
+              <span>Wallpaper 1</span>
+              <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
+            </button>
+            <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/wallpaper2.jpg">
+              <img class="wallpaper-preview" src="assets/images/wallpapers/wallpaper2.jpg" alt="Wallpaper two preview" />
+              <span>Wallpaper 2</span>
+              <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
+            </button>
+            <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/wallpaper3.jpg">
+              <img class="wallpaper-preview" src="assets/images/wallpapers/wallpaper3.jpg" alt="Wallpaper three preview" />
+              <span>Wallpaper 3</span>
+              <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
+            </button>
+            <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/wallpaper4.jpg">
+              <img class="wallpaper-preview" src="assets/images/wallpapers/wallpaper4.jpg" alt="Wallpaper four preview" />
+              <span>Wallpaper 4</span>
+              <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside id="desktopContextMenu" class="desktop-context-menu" hidden aria-label="Desktop context menu">
+      <button class="context-menu-item" type="button" data-context-action="refresh">
+        <img src="assets/images/contextMenu/refresh.png" alt="" aria-hidden="true" />
+        <span>Refresh</span>
+      </button>
+      <button class="context-menu-item" type="button" data-open-window="codingWindow">
+        <img src="assets/images/contextMenu/source_code.png" alt="" aria-hidden="true" />
+        <span>Source Code</span>
+      </button>
+      <button class="context-menu-item" type="button" data-open-window="githubWindow">
+        <img src="assets/images/contextMenu/github.svg" alt="" aria-hidden="true" />
+        <span>GitHub</span>
+      </button>
+      <button class="context-menu-item" type="button" data-open-window="contactWindow">
+        <img src="assets/images/contextMenu/contact_me.png" alt="" aria-hidden="true" />
+        <span>Contact Me</span>
+      </button>
+      <button class="context-menu-item" type="button" data-open-window="detailWindow">
+        <img src="assets/images/contextMenu/star.png" alt="" aria-hidden="true" />
+        <span>Featured Project</span>
+      </button>
+      <button class="context-menu-item" type="button" data-open-window="aboutWindow">
+        <img src="assets/images/contextMenu/credits.svg" alt="" aria-hidden="true" />
+        <span>Credits</span>
+      </button>
+    </aside>
+
+    <aside id="startMenu" class="start-menu" hidden aria-label="Start menu">
+      <div class="start-quick-actions">
+        <button class="quick-action-button" id="powerButton" type="button" aria-label="Lock screen">
+          <img src="assets/images/baseImages/windows_10.svg" alt="" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div class="start-app-list">
+        <p class="start-menu-heading">Apps</p>
+        <button class="start-entry" type="button" data-open-window="aboutWindow">
+          <img class="start-entry-icon" src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
+          <span>About Me</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="codingWindow">
+          <img class="start-entry-icon" src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+          <span>VSCode</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="contactWindow">
+          <img class="start-entry-icon" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+          <span>Contact Me</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="githubWindow">
+          <img class="start-entry-icon" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+          <span>Chrome</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="detailWindow">
+          <img class="start-entry-icon" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+          <span>Word</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="solidworksWindow">
+          <img class="start-entry-icon" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span>Spreadsheet</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="settingsWindow">
+          <img class="start-entry-icon" src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+          <span>Settings</span>
+        </button>
+        <label for="startSearch" class="sr-only">Search shortcuts</label>
+        <input id="startSearch" class="start-search" type="search" placeholder="Type here to search" />
+      </div>
+
+      <div class="start-tiles">
+        <div class="profile-card">
+          <img class="profile-card-avatar" src="assets/images/baseImages/default_avatar.svg" alt="" aria-hidden="true" />
+          <p class="profile-card-name" id="startUserName">Your Name</p>
+          <div class="social-links">
+            <a class="social-link" id="startEmailLink" href="#" aria-label="Send email">
+              <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
+            </a>
+            <a class="social-link" id="startLinkedinLink" href="#" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
+              <img src="assets/images/social/linkedin.svg" alt="" aria-hidden="true" />
+            </a>
+            <a class="social-link" id="startGithubLink" href="#" target="_blank" rel="noreferrer" aria-label="Open GitHub">
+              <img src="assets/images/social/github.svg" alt="" aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+
+        <div class="start-tile-grid">
+          <button class="start-tile" type="button" data-open-window="aboutWindow">
+            <img src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
+            <span>About</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="codingWindow">
+            <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+            <span>Code</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="githubWindow">
+            <img src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+            <span>Web</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="contactWindow">
+            <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+            <span>Mail</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="detailWindow">
+            <img src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+            <span>Docs</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="settingsWindow">
+            <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+            <span>Settings</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <nav class="taskbar" aria-label="Desktop taskbar">
+      <div class="taskbar-left">
+        <button id="startButton" class="taskbar-start" type="button" aria-expanded="false" aria-controls="startMenu">
+          <img src="assets/images/baseImages/windows-logo.svg" alt="" aria-hidden="true" />
+          <span class="sr-only">Open start menu</span>
+        </button>
+
+        <button class="taskbar-search" type="button" aria-label="Search">
+          <span class="taskbar-search-circle" aria-hidden="true"></span>
+        </button>
+
+        <div class="quick-launch" aria-label="Quick launch">
+          <button class="quick-launch-button" type="button" data-open-window="codingWindow" aria-label="Open VSCode">
+            <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+          </button>
+          <button class="quick-launch-button" type="button" data-open-window="githubWindow" aria-label="Open Chrome">
+            <img src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+          </button>
+          <button class="quick-launch-button" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
+            <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+          </button>
+          <button class="quick-launch-button" type="button" data-open-window="settingsWindow" aria-label="Open Settings">
+            <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div class="taskbar-windows" id="taskbarWindows" aria-label="Open windows"></div>
+      </div>
+
+      <div class="system-tray" aria-label="System tray">
+        <button class="tray-icon-button" type="button" data-open-window="settingsWindow" aria-label="Open settings">
+          <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+        </button>
+        <button class="tray-icon-button" type="button" data-open-window="contactWindow" aria-label="Open contact">
+          <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
+        </button>
+        <span id="taskbarClock" class="taskbar-clock">9:59 AM</span>
+      </div>
+    </nav>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
