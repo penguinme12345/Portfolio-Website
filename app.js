@@ -177,7 +177,9 @@ const state = {
     renamingId: null,
     renameDraft: "",
     clipboard: null,
-    renameNeedsFocus: false
+    renameNeedsFocus: false,
+    lastPrimaryClickEntryId: null,
+    lastPrimaryClickAt: 0
   },
   selectedCodingProjectId: null,
   lolDemo: { ...LOL_DEMO_DEFAULTS },
@@ -712,6 +714,8 @@ function initializeExplorerData() {
   state.explorer.renameDraft = "";
   state.explorer.clipboard = null;
   state.explorer.renameNeedsFocus = false;
+  state.explorer.lastPrimaryClickEntryId = null;
+  state.explorer.lastPrimaryClickAt = 0;
   state.explorer.search = "";
   state.explorer.nextCustomId = 1;
   if (els.explorerSearch) {
@@ -1665,6 +1669,8 @@ function bindExplorerControls() {
     state.explorer.path = [...state.explorer.history[state.explorer.historyIndex]];
     state.explorer.selectedEntryId = null;
     state.explorer.contextEntryId = null;
+    state.explorer.lastPrimaryClickEntryId = null;
+    state.explorer.lastPrimaryClickAt = 0;
     hideExplorerMenus();
     renderExplorer();
   });
@@ -1679,6 +1685,8 @@ function bindExplorerControls() {
   els.explorerRefreshButton?.addEventListener("click", () => {
     state.explorer.selectedEntryId = null;
     state.explorer.contextEntryId = null;
+    state.explorer.lastPrimaryClickEntryId = null;
+    state.explorer.lastPrimaryClickAt = 0;
     hideExplorerMenus();
     renderExplorer();
   });
@@ -1732,6 +1740,8 @@ function bindExplorerControls() {
       }
       state.explorer.selectedEntryId = null;
       state.explorer.contextEntryId = null;
+      state.explorer.lastPrimaryClickEntryId = null;
+      state.explorer.lastPrimaryClickAt = 0;
       renderExplorer();
       return;
     }
@@ -1745,8 +1755,21 @@ function bindExplorerControls() {
       finishExplorerRename(true);
     }
 
+    const now = Date.now();
+    const isDoublePrimaryClick =
+      state.explorer.lastPrimaryClickEntryId === entryId && now - state.explorer.lastPrimaryClickAt <= 420;
+
+    state.explorer.lastPrimaryClickEntryId = entryId;
+    state.explorer.lastPrimaryClickAt = now;
+
     state.explorer.selectedEntryId = entryId;
     state.explorer.contextEntryId = entryId;
+
+    if (isDoublePrimaryClick && state.explorer.renamingId !== entryId) {
+      openExplorerEntry(entryId);
+      return;
+    }
+
     renderExplorer();
   });
 
@@ -1763,6 +1786,8 @@ function bindExplorerControls() {
       if (state.explorer.renamingId && state.explorer.renamingId !== entryId) {
         finishExplorerRename(true);
       }
+      state.explorer.lastPrimaryClickEntryId = null;
+      state.explorer.lastPrimaryClickAt = 0;
       state.explorer.selectedEntryId = entryId;
       state.explorer.contextEntryId = entryId;
       renderExplorer();
@@ -1773,28 +1798,12 @@ function bindExplorerControls() {
     if (state.explorer.renamingId) {
       finishExplorerRename(true);
     }
+    state.explorer.lastPrimaryClickEntryId = null;
+    state.explorer.lastPrimaryClickAt = 0;
     state.explorer.selectedEntryId = null;
     state.explorer.contextEntryId = null;
     renderExplorer();
     openExplorerContextMenu(event.clientX, event.clientY, null);
-  });
-
-  els.explorerRows.addEventListener("dblclick", (event) => {
-    if (event.target.closest(".explorer-rename-input")) {
-      return;
-    }
-
-    const row = event.target.closest(".explorer-row");
-    if (!row) {
-      return;
-    }
-
-    const entryId = row.getAttribute("data-entry-id");
-    if (!entryId || state.explorer.renamingId === entryId) {
-      return;
-    }
-
-    openExplorerEntry(entryId);
   });
 
   els.explorerRows.addEventListener("keydown", (event) => {
@@ -2017,6 +2026,8 @@ function navigateExplorerTo(path, pushHistory = true) {
   state.explorer.renamingId = null;
   state.explorer.renameDraft = "";
   state.explorer.renameNeedsFocus = false;
+  state.explorer.lastPrimaryClickEntryId = null;
+  state.explorer.lastPrimaryClickAt = 0;
   hideExplorerMenus();
 
   if (pushHistory) {
