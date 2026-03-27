@@ -1,5 +1,13 @@
 const DEFAULT_WALLPAPER = "assets/images/wallpapers/wallpaper2.jpg";
 const SETTINGS_STORAGE_KEY = "portfolio_desktop_settings_v1";
+const EXPLORATION_STORAGE_KEY = "portfolio_desktop_exploration_v1";
+const BONUS_MESSAGES = [
+  "Fast UI systems are won by milliseconds: small interaction latency changes perception a lot.",
+  "My favorite build loop: design first, instrument second, optimize third.",
+  "I treat project UX like game design: every click should have a clear reward.",
+  "Strong portfolios feel like products, not slides. Interaction depth matters.",
+  "Hidden detail: most polished desktop clones succeed because state transitions are consistent."
+];
 const LOL_DEMO_DEFAULTS = {
   champion: "ahri",
   role: "MID",
@@ -55,6 +63,7 @@ const LOL_ROLE_MODIFIERS = {
   ADC: { objective: 1, vision: 0, deaths: -1 },
   SUPPORT: { objective: 3, vision: 8, deaths: 0 }
 };
+const WORD_DEFAULT_HTML = "<p><br></p>";
 const EXPLORER_ROOT_ID = "my-pc";
 const EXPLORER_TIMESTAMP = "2026-03-27 10:31 PM";
 const EXPLORER_APP_LIBRARY = [
@@ -152,7 +161,8 @@ const state = {
     "githubWindow",
     "contactWindow",
     "detailWindow",
-    "settingsWindow"
+    "settingsWindow",
+    "bonusWindow"
   ],
   activeCodingFilter: {
     text: "",
@@ -185,11 +195,32 @@ const state = {
   lolDemo: { ...LOL_DEMO_DEFAULTS },
   solidworksSort: "newest",
   activeWindowId: null,
-  activeDetailProjectId: null,
-  activeDetailTab: "overview",
+  word: {
+    openMenu: null,
+    zoom: 1,
+    documentName: "Untitled document",
+    spellcheck: true,
+    showRuler: true,
+    showPrintLayout: true,
+    showNonPrinting: false,
+    landscape: false,
+    tablePicker: {
+      open: false,
+      rows: 1,
+      cols: 1,
+      visibleRows: 5,
+      visibleCols: 5,
+      max: 15
+    }
+  },
   preferences: {
     windowGlow: true,
     largeText: false
+  },
+  exploration: {
+    visitedWindows: [],
+    bonusUnlocked: false,
+    revealedCount: 0
   },
   zIndex: 50
 };
@@ -211,9 +242,14 @@ const els = {
   aboutHighlights: document.getElementById("aboutHighlights"),
   profileQuickFacts: document.getElementById("profileQuickFacts"),
   aboutModePanel: document.getElementById("aboutModePanel"),
-  aboutEmailLink: document.getElementById("aboutEmailLink"),
+  aboutResumeLink: document.getElementById("aboutResumeLink"),
+  aboutContactButton: document.getElementById("aboutContactButton"),
   aboutLinkedinLink: document.getElementById("aboutLinkedinLink"),
   aboutGithubLink: document.getElementById("aboutGithubLink"),
+  bonusDesktopIcon: document.getElementById("bonusDesktopIcon"),
+  bonusRevealButton: document.getElementById("bonusRevealButton"),
+  bonusMessageText: document.getElementById("bonusMessageText"),
+  bonusMessageCard: document.getElementById("bonusMessageCard"),
   explorerBreadcrumb: document.getElementById("explorerBreadcrumb"),
   explorerRows: document.getElementById("explorerRows"),
   explorerSearch: document.getElementById("explorerSearch"),
@@ -266,8 +302,26 @@ const els = {
   lolDemoRecommendations: document.getElementById("lolDemoRecommendations"),
   lolDemoTrendBars: document.getElementById("lolDemoTrendBars"),
   lolDemoEventFeed: document.getElementById("lolDemoEventFeed"),
-  detailContent: document.getElementById("detailContent"),
-  detailTabs: document.getElementById("detailTabs"),
+  wordMenuShell: document.getElementById("wordMenuShell"),
+  wordMenuBar: document.getElementById("wordMenuBar"),
+  wordMenuLayer: document.getElementById("wordMenuLayer"),
+  wordDocTitle: document.getElementById("wordDocTitle"),
+  wordToolbarRow: document.getElementById("wordToolbarRow"),
+  wordToolbarZoom: document.getElementById("wordToolbarZoom"),
+  wordToolbarStyle: document.getElementById("wordToolbarStyle"),
+  wordToolbarFont: document.getElementById("wordToolbarFont"),
+  wordToolbarFontSize: document.getElementById("wordToolbarFontSize"),
+  wordInsertMenu: document.getElementById("wordInsertMenu"),
+  wordInsertTableItem: document.getElementById("wordInsertTableItem"),
+  wordTablePicker: document.getElementById("wordTablePicker"),
+  wordTablePickerGrid: document.getElementById("wordTablePickerGrid"),
+  wordTablePickerSize: document.getElementById("wordTablePickerSize"),
+  wordEditor: document.getElementById("wordEditor"),
+  wordCanvas: document.getElementById("wordCanvas"),
+  wordFileInput: document.getElementById("wordFileInput"),
+  wordStatusMessage: document.getElementById("wordStatusMessage"),
+  wordStatusStats: document.getElementById("wordStatusStats"),
+  wordStatusZoom: document.getElementById("wordStatusZoom"),
   githubLink: document.getElementById("githubLink"),
   githubQuickLinks: document.getElementById("githubQuickLinks"),
   githubFeaturedLinks: document.getElementById("githubFeaturedLinks"),
@@ -296,8 +350,10 @@ init();
 
 async function init() {
   loadSavedPreferences();
+  loadExplorationState();
   applyPreferenceClasses();
   syncPreferenceControls();
+  syncBonusVisibility();
 
   setWallpaper(state.currentWallpaper);
   bindWindowButtons();
@@ -315,9 +371,10 @@ async function init() {
   bindCodingControls();
   bindLolDemoControls();
   bindSolidworksControls();
-  bindDetailTabs();
+  bindWordAppControls();
   bindContactActions();
   bindSettingsToggles();
+  bindBonusInteractions();
   startClocks();
   syncLolDemoControlsFromState();
   updateCodingWorkspace();
@@ -372,6 +429,93 @@ function savePreferences() {
   }
 }
 
+function loadExplorationState() {
+  try {
+    const raw = localStorage.getItem(EXPLORATION_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+
+    const saved = JSON.parse(raw);
+    const visited = Array.isArray(saved.visitedWindows) ? saved.visitedWindows.filter((item) => typeof item === "string") : [];
+    state.exploration.visitedWindows = visited;
+    state.exploration.bonusUnlocked = Boolean(saved.bonusUnlocked);
+    state.exploration.revealedCount = Number.isFinite(Number(saved.revealedCount)) ? Number(saved.revealedCount) : 0;
+  } catch (error) {
+    // Ignore malformed exploration data and keep defaults.
+  }
+}
+
+function saveExplorationState() {
+  try {
+    localStorage.setItem(
+      EXPLORATION_STORAGE_KEY,
+      JSON.stringify({
+        visitedWindows: state.exploration.visitedWindows,
+        bonusUnlocked: state.exploration.bonusUnlocked,
+        revealedCount: state.exploration.revealedCount
+      })
+    );
+  } catch (error) {
+    // Ignore write failures in restricted contexts.
+  }
+}
+
+function getExplorationTargetWindows() {
+  const targets = new Set();
+  document.querySelectorAll(".desktop-icon[data-open-window]:not(.desktop-icon-secret)").forEach((icon) => {
+    const windowId = icon.getAttribute("data-open-window");
+    if (windowId) {
+      targets.add(windowId);
+    }
+  });
+  return Array.from(targets);
+}
+
+function syncBonusVisibility() {
+  if (!els.bonusDesktopIcon) {
+    return;
+  }
+  els.bonusDesktopIcon.hidden = !state.exploration.bonusUnlocked;
+}
+
+function unlockBonusIfEligible() {
+  if (state.exploration.bonusUnlocked) {
+    return;
+  }
+
+  const targetWindows = getExplorationTargetWindows();
+  if (!targetWindows.length) {
+    return;
+  }
+
+  const allVisited = targetWindows.every((windowId) => state.exploration.visitedWindows.includes(windowId));
+  if (!allVisited) {
+    return;
+  }
+
+  state.exploration.bonusUnlocked = true;
+  saveExplorationState();
+  syncBonusVisibility();
+  els.bonusDesktopIcon?.classList.add("is-unlocked");
+  window.setTimeout(() => {
+    els.bonusDesktopIcon?.classList.remove("is-unlocked");
+  }, 1400);
+}
+
+function markWindowVisited(windowId) {
+  if (!windowId) {
+    return;
+  }
+
+  if (!state.exploration.visitedWindows.includes(windowId)) {
+    state.exploration.visitedWindows.push(windowId);
+    saveExplorationState();
+  }
+
+  unlockBonusIfEligible();
+}
+
 function applyPreferenceClasses() {
   document.body.classList.toggle("enhanced-glow", state.preferences.windowGlow);
   document.body.classList.toggle("large-text-mode", state.preferences.largeText);
@@ -394,13 +538,19 @@ function bindWindowButtons() {
         state.codingWorkspace = targetWorkspace;
         updateCodingWorkspace();
       }
-      openWindow(button.getAttribute("data-open-window"));
+      openWindow(button.getAttribute("data-open-window"), { trigger: button });
     });
   });
 
   document.querySelectorAll("[data-close-window]").forEach((button) => {
     button.addEventListener("click", () => {
       closeWindow(button.getAttribute("data-close-window"));
+    });
+  });
+
+  document.querySelectorAll("[data-fullscreen-window]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleWindowFullscreenById(button.getAttribute("data-fullscreen-window"));
     });
   });
 
@@ -2128,7 +2278,7 @@ function openExplorerEntry(entryId) {
   if (action.type === "open-project") {
     const project = findProjectById(action.projectId);
     if (project) {
-      showProjectDetails(project, true, "overview");
+      openProjectInPortfolio(project, true);
     }
     return;
   }
@@ -2429,22 +2579,1060 @@ function bindSolidworksControls() {
   });
 }
 
-function bindDetailTabs() {
-  if (!els.detailTabs) {
+let wordStatusTimer = null;
+
+function bindWordAppControls() {
+  const wordWindow = document.getElementById("detailWindow");
+  if (!wordWindow || !els.wordEditor) {
     return;
   }
 
-  els.detailTabs.querySelectorAll("[data-detail-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.activeDetailTab = button.getAttribute("data-detail-tab") || "overview";
-      renderDetailTabs();
+  const fullscreenToggle = wordWindow.querySelector('[data-fullscreen-window="detailWindow"]');
+  if (fullscreenToggle) {
+    fullscreenToggle.innerHTML = "&#9723;";
+  }
 
-      const project = findProjectById(state.activeDetailProjectId);
-      if (project) {
-        renderProjectDetails(project);
+  if (!els.wordEditor.innerHTML.trim()) {
+    els.wordEditor.innerHTML = WORD_DEFAULT_HTML;
+  }
+
+  applyWordDocumentTitle();
+  resetWordTypingMode();
+  updateWordZoom();
+  updateWordViewClasses();
+  updateWordStats();
+  initializeWordTablePicker();
+
+  wordWindow.querySelectorAll("[data-word-menu-button]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menuId = button.getAttribute("data-word-menu-button");
+      if (!menuId) {
+        return;
       }
+
+      if (state.word.openMenu === menuId) {
+        closeWordMenus();
+        return;
+      }
+
+      openWordMenu(menuId, button);
+    });
+
+    button.addEventListener("mouseenter", () => {
+      const menuId = button.getAttribute("data-word-menu-button");
+      if (!menuId || state.word.openMenu === null || state.word.openMenu === menuId) {
+        return;
+      }
+      openWordMenu(menuId, button);
     });
   });
+
+  wordWindow.querySelectorAll(".word-menu-dropdown [data-word-command]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const command = button.getAttribute("data-word-command");
+      if (command) {
+        runWordMenuCommand(command);
+      }
+      closeWordMenus();
+    });
+  });
+
+  wordWindow.querySelectorAll(".word-menu-dropdown [data-word-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.getAttribute("data-word-action");
+      if (action === "insert-table") {
+        openWordTablePicker();
+        return;
+      }
+      runWordAction(action);
+      closeWordMenus();
+    });
+  });
+
+  wordWindow.querySelectorAll(".word-toolbar-row [data-word-command]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const command = button.getAttribute("data-word-command");
+      if (!command) {
+        return;
+      }
+      runWordMenuCommand(command);
+    });
+  });
+
+  wordWindow.querySelectorAll(".word-toolbar-row [data-word-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.getAttribute("data-word-action");
+      if (!action) {
+        return;
+      }
+      runWordAction(action);
+    });
+  });
+
+  els.wordToolbarZoom?.addEventListener("change", (event) => {
+    state.word.zoom = clamp(Number(event.target.value || 1), 0.7, 1.6);
+    updateWordZoom();
+  });
+
+  els.wordToolbarStyle?.addEventListener("change", (event) => {
+    const style = event.target.value || "p";
+    executeWordCommand("formatBlock", style);
+  });
+
+  els.wordToolbarFont?.addEventListener("change", (event) => {
+    const fontName = event.target.value || "Calibri";
+    executeWordCommand("fontName", fontName);
+  });
+
+  els.wordToolbarFontSize?.addEventListener("change", (event) => {
+    const size = clamp(Number(event.target.value || 11), 8, 72);
+    event.target.value = String(size);
+    executeWordCommand("fontSize", mapWordFontSize(size));
+  });
+
+  els.wordInsertTableItem?.addEventListener("mouseenter", () => {
+    openWordTablePicker();
+  });
+
+  els.wordInsertTableItem?.addEventListener("focus", () => {
+    openWordTablePicker();
+  });
+
+  els.wordInsertTableItem?.addEventListener("click", (event) => {
+    event.preventDefault();
+    openWordTablePicker();
+  });
+
+  els.wordInsertMenu?.querySelectorAll(".word-menu-item").forEach((menuItem) => {
+    if (menuItem === els.wordInsertTableItem) {
+      return;
+    }
+    menuItem.addEventListener("mouseenter", () => {
+      closeWordTablePicker();
+    });
+  });
+
+  els.wordFileInput?.addEventListener("change", () => {
+    const file = els.wordFileInput.files?.[0];
+    if (file) {
+      loadWordFile(file);
+    }
+    els.wordFileInput.value = "";
+  });
+
+  ["input", "keyup", "mouseup", "focus"].forEach((eventName) => {
+    els.wordEditor.addEventListener(eventName, () => {
+      updateWordStats();
+    });
+  });
+
+  wordWindow.addEventListener("mousedown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const isMenuButton = Boolean(target.closest("[data-word-menu-button]"));
+    const isMenuBody = Boolean(target.closest(".word-menu-dropdown"));
+    if (!isMenuButton && !isMenuBody) {
+      closeWordMenus();
+    }
+  });
+
+  document.addEventListener("mousedown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    if (!wordWindow.contains(target)) {
+      closeWordMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeWordMenus();
+    }
+  });
+}
+
+function openWordMenu(menuId, buttonEl) {
+  const menu = els.wordMenuLayer?.querySelector(`[data-word-menu="${menuId}"]`);
+  if (!menu || !els.wordMenuShell) {
+    return;
+  }
+
+  closeWordMenus();
+  state.word.openMenu = menuId;
+
+  const shellRect = els.wordMenuShell.getBoundingClientRect();
+  const buttonRect = buttonEl.getBoundingClientRect();
+  const menuRowRect = els.wordMenuBar?.getBoundingClientRect();
+  const left = Math.max(8, Math.round(buttonRect.left - shellRect.left));
+  const top = Math.max(44, Math.round((menuRowRect?.bottom || buttonRect.bottom) - shellRect.top + 2));
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.hidden = false;
+
+  buttonEl.classList.add("is-open");
+  buttonEl.setAttribute("aria-expanded", "true");
+  syncWordMenuCheckStates();
+}
+
+function closeWordMenus() {
+  if (state.word.openMenu === null) {
+    return;
+  }
+
+  state.word.openMenu = null;
+  closeWordTablePicker();
+  document.querySelectorAll(".word-menu-dropdown[data-word-menu]").forEach((menu) => {
+    menu.hidden = true;
+  });
+  document.querySelectorAll("[data-word-menu-button]").forEach((button) => {
+    button.classList.remove("is-open");
+    button.setAttribute("aria-expanded", "false");
+  });
+}
+
+function initializeWordTablePicker() {
+  if (!els.wordTablePickerGrid || !els.wordTablePickerSize) {
+    return;
+  }
+
+  if (els.wordTablePickerGrid.dataset.initialized === "true") {
+    return;
+  }
+
+  const max = state.word.tablePicker.max || 15;
+  const fragment = document.createDocumentFragment();
+
+  for (let row = 1; row <= max; row += 1) {
+    for (let col = 1; col <= max; col += 1) {
+      const cell = document.createElement("button");
+      cell.className = "word-table-cell";
+      cell.type = "button";
+      cell.setAttribute("data-table-row", String(row));
+      cell.setAttribute("data-table-col", String(col));
+      cell.setAttribute("aria-label", `Insert table ${col} by ${row}`);
+      fragment.appendChild(cell);
+    }
+  }
+
+  els.wordTablePickerGrid.appendChild(fragment);
+  els.wordTablePickerGrid.dataset.initialized = "true";
+  els.wordTablePickerGrid.style.setProperty("--table-picker-max", String(max));
+  updateWordTablePickerViewport();
+  updateWordTablePickerSelection(1, 1);
+
+  els.wordTablePickerGrid.addEventListener("mousemove", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const cell = target.closest(".word-table-cell");
+    if (!cell) {
+      return;
+    }
+
+    const row = Number(cell.getAttribute("data-table-row") || "1");
+    const col = Number(cell.getAttribute("data-table-col") || "1");
+
+    const nextVisibleRows = row >= state.word.tablePicker.visibleRows
+      ? Math.min(max, state.word.tablePicker.visibleRows + 1)
+      : Math.max(5, row + 1);
+    const nextVisibleCols = col >= state.word.tablePicker.visibleCols
+      ? Math.min(max, state.word.tablePicker.visibleCols + 1)
+      : Math.max(5, col + 1);
+    state.word.tablePicker.visibleRows = nextVisibleRows;
+    state.word.tablePicker.visibleCols = nextVisibleCols;
+
+    updateWordTablePickerViewport();
+    updateWordTablePickerSelection(row, col);
+  });
+
+  els.wordTablePickerGrid.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const cell = target.closest(".word-table-cell");
+    if (!cell) {
+      return;
+    }
+
+    const rows = Number(cell.getAttribute("data-table-row") || "1");
+    const cols = Number(cell.getAttribute("data-table-col") || "1");
+    insertWordTable(rows, cols);
+    closeWordMenus();
+  });
+
+  els.wordTablePicker?.addEventListener("mouseleave", () => {
+    closeWordTablePicker();
+  });
+}
+
+function openWordTablePicker() {
+  if (!els.wordTablePicker || state.word.openMenu !== "insert") {
+    return;
+  }
+
+  state.word.tablePicker.visibleRows = 5;
+  state.word.tablePicker.visibleCols = 5;
+  state.word.tablePicker.rows = 1;
+  state.word.tablePicker.cols = 1;
+  state.word.tablePicker.open = true;
+  els.wordTablePicker.hidden = false;
+  if (els.wordInsertTableItem) {
+    els.wordInsertTableItem.setAttribute("aria-expanded", "true");
+  }
+
+  if (els.wordInsertMenu && els.wordInsertTableItem) {
+    const pickerTop = Math.max(4, els.wordInsertTableItem.offsetTop - 4);
+    const pickerLeft = Math.max(0, els.wordInsertMenu.offsetWidth - 3);
+    els.wordTablePicker.style.top = `${pickerTop}px`;
+    els.wordTablePicker.style.left = `${pickerLeft}px`;
+  }
+
+  updateWordTablePickerViewport();
+  updateWordTablePickerSelection(1, 1);
+}
+
+function closeWordTablePicker() {
+  if (!els.wordTablePicker) {
+    return;
+  }
+
+  state.word.tablePicker.open = false;
+  els.wordTablePicker.hidden = true;
+  if (els.wordInsertTableItem) {
+    els.wordInsertTableItem.setAttribute("aria-expanded", "false");
+  }
+}
+
+function updateWordTablePickerViewport() {
+  if (!els.wordTablePickerGrid) {
+    return;
+  }
+
+  const max = state.word.tablePicker.max || 15;
+  const visibleRows = clamp(Number(state.word.tablePicker.visibleRows) || 5, 1, max);
+  const visibleCols = clamp(Number(state.word.tablePicker.visibleCols) || 5, 1, max);
+  state.word.tablePicker.visibleRows = visibleRows;
+  state.word.tablePicker.visibleCols = visibleCols;
+
+  els.wordTablePickerGrid.style.setProperty("--table-picker-visible-cols", String(visibleCols));
+
+  els.wordTablePickerGrid.querySelectorAll(".word-table-cell").forEach((cell) => {
+    const row = Number(cell.getAttribute("data-table-row") || "1");
+    const col = Number(cell.getAttribute("data-table-col") || "1");
+    const isVisible = row <= visibleRows && col <= visibleCols;
+    cell.classList.toggle("is-hidden", !isVisible);
+  });
+}
+
+function updateWordTablePickerSelection(rows, cols) {
+  const max = state.word.tablePicker.max || 15;
+  const safeRows = clamp(Number(rows) || 1, 1, Math.min(max, state.word.tablePicker.visibleRows || 5));
+  const safeCols = clamp(Number(cols) || 1, 1, Math.min(max, state.word.tablePicker.visibleCols || 5));
+
+  state.word.tablePicker.rows = safeRows;
+  state.word.tablePicker.cols = safeCols;
+
+  if (els.wordTablePickerSize) {
+    els.wordTablePickerSize.textContent = `${safeCols} x ${safeRows}`;
+  }
+
+  if (!els.wordTablePickerGrid) {
+    return;
+  }
+
+  els.wordTablePickerGrid.querySelectorAll(".word-table-cell").forEach((cell) => {
+    const row = Number(cell.getAttribute("data-table-row") || "1");
+    const col = Number(cell.getAttribute("data-table-col") || "1");
+    cell.classList.toggle("is-selected", row <= safeRows && col <= safeCols);
+  });
+}
+
+function focusWordEditor() {
+  if (!els.wordEditor) {
+    return;
+  }
+  els.wordEditor.focus();
+}
+
+function resetWordTypingMode() {
+  if (!els.wordEditor) {
+    return;
+  }
+
+  focusWordEditor();
+  try {
+    if (document.queryCommandState("bold")) {
+      document.execCommand("bold", false, null);
+    }
+  } catch (error) {
+    // Ignore unsupported state checks.
+  }
+}
+
+function mapWordFontSize(sizePx) {
+  const size = clamp(Number(sizePx) || 11, 8, 72);
+  if (size <= 10) {
+    return 1;
+  }
+  if (size <= 12) {
+    return 2;
+  }
+  if (size <= 16) {
+    return 3;
+  }
+  if (size <= 22) {
+    return 4;
+  }
+  if (size <= 29) {
+    return 5;
+  }
+  if (size <= 43) {
+    return 6;
+  }
+  return 7;
+}
+
+function executeWordCommand(command, value = null) {
+  if (!els.wordEditor) {
+    return;
+  }
+
+  focusWordEditor();
+
+  try {
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand(command, false, value);
+    updateWordStats();
+    setWordStatusMessage("Formatting applied.");
+  } catch (error) {
+    setWordStatusMessage("This formatting command is not supported in your browser.", true);
+  }
+}
+
+function runWordMenuCommand(command) {
+  if (!command) {
+    return;
+  }
+
+  if (command === "createLink") {
+    const link = window.prompt("Enter URL", "https://");
+    if (!link) {
+      setWordStatusMessage("Link insert canceled.");
+      return;
+    }
+    executeWordCommand("createLink", link);
+    return;
+  }
+
+  if (command === "delete") {
+    executeWordCommand("forwardDelete");
+    return;
+  }
+
+  executeWordCommand(command);
+}
+
+function runWordAction(action) {
+  if (!action || !els.wordEditor) {
+    return;
+  }
+
+  if (action === "new") {
+    els.wordEditor.innerHTML = WORD_DEFAULT_HTML;
+    state.word.documentName = "Untitled document";
+    applyWordDocumentTitle();
+    resetWordTypingMode();
+    updateWordStats();
+    setWordStatusMessage("New document ready.");
+    focusWordEditor();
+    return;
+  }
+
+  if (action === "open") {
+    els.wordFileInput?.click();
+    return;
+  }
+
+  if (action === "toolbar-font-dec" || action === "toolbar-font-inc") {
+    const currentSize = clamp(Number(els.wordToolbarFontSize?.value || 11), 8, 72);
+    const nextSize = clamp(currentSize + (action === "toolbar-font-inc" ? 1 : -1), 8, 72);
+    if (els.wordToolbarFontSize) {
+      els.wordToolbarFontSize.value = String(nextSize);
+    }
+    executeWordCommand("fontSize", mapWordFontSize(nextSize));
+    return;
+  }
+
+  if (action === "save-txt") {
+    const content = (els.wordEditor.textContent || "").replace(/\u00a0/g, " ");
+    downloadWordDocument(`${normalizeWordFileName(state.word.documentName)}.txt`, content, "text/plain;charset=utf-8");
+    setWordStatusMessage("Saved as .txt");
+    return;
+  }
+
+  if (action === "save-html") {
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(state.word.documentName)}</title></head><body>${els.wordEditor.innerHTML}</body></html>`;
+    downloadWordDocument(`${normalizeWordFileName(state.word.documentName)}.html`, html, "text/html;charset=utf-8");
+    setWordStatusMessage("Saved as .html");
+    return;
+  }
+
+  if (action === "make-copy") {
+    const copyName = `Copy of ${state.word.documentName}`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(copyName)}</title></head><body>${els.wordEditor.innerHTML}</body></html>`;
+    downloadWordDocument(`${normalizeWordFileName(copyName)}.html`, html, "text/html;charset=utf-8");
+    setWordStatusMessage("Copy downloaded.");
+    return;
+  }
+
+  if (action === "share-doc") {
+    setWordStatusMessage("Share panel is not connected yet. Use GitHub/Live links from your portfolio apps.");
+    return;
+  }
+
+  if (action === "email-doc") {
+    const subject = encodeURIComponent(state.word.documentName);
+    const body = encodeURIComponent((els.wordEditor.textContent || "").slice(0, 1800));
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    setWordStatusMessage("Opening your email client.");
+    return;
+  }
+
+  if (action === "rename-document") {
+    const renamed = window.prompt("Rename document", state.word.documentName);
+    if (!renamed) {
+      setWordStatusMessage("Rename canceled.");
+      return;
+    }
+
+    const cleanName = renamed.trim();
+    if (!cleanName.length) {
+      setWordStatusMessage("Document name cannot be empty.", true);
+      return;
+    }
+
+    state.word.documentName = cleanName;
+    applyWordDocumentTitle();
+    setWordStatusMessage(`Renamed to "${cleanName}".`);
+    return;
+  }
+
+  if (action === "page-setup") {
+    setWordStatusMessage("Page setup panel is coming next.");
+    return;
+  }
+
+  if (action === "print-doc") {
+    window.print();
+    setWordStatusMessage("Print dialog opened.");
+    return;
+  }
+
+  if (action === "paste") {
+    if (!navigator.clipboard?.readText) {
+      executeWordCommand("paste");
+      return;
+    }
+
+    navigator.clipboard
+      .readText()
+      .then((clipboardText) => {
+        if (!clipboardText) {
+          setWordStatusMessage("Clipboard is empty.");
+          return;
+        }
+        insertWordHtmlAtCursor(escapeHtml(clipboardText).replace(/\n/g, "<br>"));
+        setWordStatusMessage("Text pasted.");
+      })
+      .catch(() => {
+        executeWordCommand("paste");
+      });
+    return;
+  }
+
+  if (action === "style-normal") {
+    executeWordCommand("formatBlock", "p");
+    return;
+  }
+
+  if (action === "style-heading1") {
+    executeWordCommand("formatBlock", "h1");
+    return;
+  }
+
+  if (action === "style-heading2") {
+    executeWordCommand("formatBlock", "h2");
+    return;
+  }
+
+  if (action === "style-title") {
+    executeWordCommand("formatBlock", "h1");
+    executeWordCommand("justifyCenter");
+    return;
+  }
+
+  if (action === "insert-date") {
+    insertWordHtmlAtCursor(new Date().toLocaleDateString());
+    setWordStatusMessage("Date inserted.");
+    return;
+  }
+
+  if (action === "insert-time") {
+    insertWordHtmlAtCursor(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+    setWordStatusMessage("Time inserted.");
+    return;
+  }
+
+  if (action === "insert-line") {
+    insertWordHtmlAtCursor("<hr />");
+    setWordStatusMessage("Horizontal line inserted.");
+    return;
+  }
+
+  if (action === "insert-page-break") {
+    insertWordHtmlAtCursor('<div style="page-break-after: always; border-top: 1px dashed #999; margin: 18px 0;"></div>');
+    setWordStatusMessage("Page break inserted.");
+    return;
+  }
+
+  if (action === "insert-table") {
+    openWordTablePicker();
+    setWordStatusMessage("Choose table size from the grid.");
+    return;
+  }
+
+  if (action === "theme-clean") {
+    els.wordCanvas?.classList.remove("is-theme-modern");
+    setWordStatusMessage("Clean page theme applied.");
+    return;
+  }
+
+  if (action === "theme-modern") {
+    els.wordCanvas?.classList.add("is-theme-modern");
+    setWordStatusMessage("Modern page theme applied.");
+    return;
+  }
+
+  if (action === "align-left") {
+    els.wordCanvas?.classList.add("is-page-left");
+    setWordStatusMessage("Page aligned to left.");
+    return;
+  }
+
+  if (action === "align-center") {
+    els.wordCanvas?.classList.remove("is-page-left");
+    setWordStatusMessage("Page centered.");
+    return;
+  }
+
+  if (action === "insert-citation") {
+    insertWordHtmlAtCursor("[Source: Author, 2026]");
+    setWordStatusMessage("Citation inserted.");
+    return;
+  }
+
+  if (action === "insert-signature") {
+    insertWordHtmlAtCursor("<p>Best regards,</p><p><strong>Jay Patel</strong></p>");
+    setWordStatusMessage("Signature block inserted.");
+    return;
+  }
+
+  if (action === "word-count") {
+    updateWordStats(true);
+    return;
+  }
+
+  if (action === "find-replace") {
+    const searchFor = window.prompt("Find what");
+    if (!searchFor) {
+      setWordStatusMessage("Find and replace canceled.");
+      return;
+    }
+    const replaceWith = window.prompt("Replace with", "");
+    const escapedFind = searchFor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const finder = new RegExp(escapedFind, "gi");
+    const before = els.wordEditor.innerHTML;
+    const after = before.replace(finder, replaceWith || "");
+    if (after === before) {
+      setWordStatusMessage("No matches found.");
+      return;
+    }
+    els.wordEditor.innerHTML = after;
+    updateWordStats();
+    setWordStatusMessage("Find and replace complete.");
+    return;
+  }
+
+  if (action === "toggle-print-layout") {
+    state.word.showPrintLayout = !state.word.showPrintLayout;
+    updateWordViewClasses();
+    setWordStatusMessage(state.word.showPrintLayout ? "Print layout enabled." : "Print layout hidden.");
+    return;
+  }
+
+  if (action === "toggle-ruler") {
+    state.word.showRuler = !state.word.showRuler;
+    updateWordViewClasses();
+    setWordStatusMessage(state.word.showRuler ? "Ruler shown." : "Ruler hidden.");
+    return;
+  }
+
+  if (action === "toggle-nonprinting") {
+    state.word.showNonPrinting = !state.word.showNonPrinting;
+    updateWordViewClasses();
+    setWordStatusMessage(state.word.showNonPrinting ? "Non-printing characters shown." : "Non-printing characters hidden.");
+    return;
+  }
+
+  if (action === "toggle-fullscreen") {
+    toggleWordFullscreen();
+    return;
+  }
+
+  if (action === "insert-image") {
+    const imageUrl = window.prompt("Image URL");
+    if (!imageUrl) {
+      setWordStatusMessage("Insert image canceled.");
+      return;
+    }
+    insertWordHtmlAtCursor(`<img src="${escapeHtml(imageUrl)}" alt="" style="max-width:100%; height:auto;" />`);
+    setWordStatusMessage("Image inserted.");
+    return;
+  }
+
+  if (action === "format-align-indent") {
+    executeWordCommand("justifyLeft");
+    setWordStatusMessage("Alignment menu action applied.");
+    return;
+  }
+
+  if (action === "format-line-space") {
+    const lineSpacing = window.prompt("Line spacing (e.g. 1.15, 1.5, 2)", "1.5");
+    if (!lineSpacing) {
+      setWordStatusMessage("Line spacing unchanged.");
+      return;
+    }
+    const parsed = Number(lineSpacing);
+    if (!Number.isFinite(parsed) || parsed < 0.8 || parsed > 3.2) {
+      setWordStatusMessage("Invalid line spacing value.", true);
+      return;
+    }
+    els.wordEditor.style.lineHeight = String(parsed);
+    setWordStatusMessage(`Line spacing set to ${parsed}.`);
+    return;
+  }
+
+  if (action === "format-bullets") {
+    executeWordCommand("insertUnorderedList");
+    return;
+  }
+
+  if (action === "insert-page-number") {
+    insertWordHtmlAtCursor("<p style=\"text-align:right; color:#666;\">Page 1</p>");
+    setWordStatusMessage("Page number inserted.");
+    return;
+  }
+
+  if (action === "toggle-page-orientation") {
+    state.word.landscape = !state.word.landscape;
+    updateWordViewClasses();
+    setWordStatusMessage(state.word.landscape ? "Landscape orientation." : "Portrait orientation.");
+    return;
+  }
+
+  if (action === "review-edits") {
+    setWordStatusMessage("Review mode mockup coming next.");
+    return;
+  }
+
+  if (action === "translate-document") {
+    setWordStatusMessage("Translate tool placeholder: hook this to API later.");
+    return;
+  }
+
+  if (action === "voice-typing") {
+    setWordStatusMessage("Voice typing placeholder.");
+    return;
+  }
+
+  if (action === "open-preferences") {
+    setWordStatusMessage("Preferences menu placeholder.");
+    return;
+  }
+
+  if (action === "extensions-market") {
+    setWordStatusMessage("Extensions marketplace placeholder.");
+    return;
+  }
+
+  if (action === "extensions-manage") {
+    setWordStatusMessage("Manage extensions placeholder.");
+    return;
+  }
+
+  if (action === "extensions-script") {
+    setWordStatusMessage("Apps Script placeholder.");
+    return;
+  }
+
+  if (action === "help-search") {
+    setWordStatusMessage("Tip: click a top menu to browse available actions.");
+    return;
+  }
+
+  if (action === "help-docs") {
+    setWordStatusMessage("Docs Help placeholder.");
+    return;
+  }
+
+  if (action === "help-training") {
+    setWordStatusMessage("Training center placeholder.");
+    return;
+  }
+
+  if (action === "help-updates") {
+    setWordStatusMessage("No updates available.");
+    return;
+  }
+
+  if (action === "help-privacy") {
+    setWordStatusMessage("Privacy policy placeholder.");
+    return;
+  }
+
+  if (action === "help-terms") {
+    setWordStatusMessage("Terms of service placeholder.");
+    return;
+  }
+
+  if (action === "help-shortcuts") {
+    setWordStatusMessage("Shortcuts: Ctrl+S save, Ctrl+P print, Ctrl+H find/replace.");
+    return;
+  }
+
+  if (action === "toggle-spellcheck") {
+    state.word.spellcheck = !state.word.spellcheck;
+    els.wordEditor.spellcheck = state.word.spellcheck;
+    setWordStatusMessage(state.word.spellcheck ? "Spell check enabled." : "Spell check disabled.");
+    return;
+  }
+
+  if (action === "zoom-out") {
+    state.word.zoom = clamp(Number((state.word.zoom - 0.1).toFixed(2)), 0.7, 1.6);
+    updateWordZoom();
+    return;
+  }
+
+  if (action === "zoom-in") {
+    state.word.zoom = clamp(Number((state.word.zoom + 0.1).toFixed(2)), 0.7, 1.6);
+    updateWordZoom();
+    return;
+  }
+
+  if (action === "zoom-reset") {
+    state.word.zoom = 1;
+    updateWordZoom();
+    return;
+  }
+
+  if (action === "proofread") {
+    setWordStatusMessage("Proofread hint: keep sentences under 24 words for stronger readability.");
+  }
+}
+
+function toggleWordFullscreen() {
+  const isWordFullscreen = document.fullscreenElement?.id === "detailWindow";
+  toggleWindowFullscreenById("detailWindow");
+  setWordStatusMessage(isWordFullscreen ? "Exited full screen." : "Entering full screen.");
+}
+
+function toggleWindowFullscreenById(windowId) {
+  const windowEl = document.getElementById(windowId);
+  if (!windowEl) {
+    return;
+  }
+
+  const isThisWindowFullscreen = document.fullscreenElement === windowEl;
+  if (isThisWindowFullscreen) {
+    document.exitFullscreen?.();
+    return;
+  }
+
+  if (document.fullscreenElement) {
+    const exitPromise = document.exitFullscreen?.();
+    if (exitPromise && typeof exitPromise.finally === "function") {
+      exitPromise.finally(() => {
+        windowEl.requestFullscreen?.();
+      });
+    } else {
+      windowEl.requestFullscreen?.();
+    }
+    return;
+  }
+
+  windowEl.requestFullscreen?.();
+}
+
+function insertWordTable(rows, cols) {
+  const safeRows = clamp(Number(rows) || 1, 1, state.word.tablePicker.max || 15);
+  const safeCols = clamp(Number(cols) || 1, 1, state.word.tablePicker.max || 15);
+
+  const body = Array.from({ length: safeRows }, (_, rowIndex) => {
+    const cells = Array.from({ length: safeCols }, (_, colIndex) => {
+      return `<td style="border:1px solid #a2a7b3; padding:6px; min-width:48px;">&nbsp;</td>`;
+    }).join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+
+  insertWordHtmlAtCursor(
+    `<table style="width:100%; border-collapse:collapse; margin:10px 0; table-layout:fixed;">${body}</table><p><br></p>`
+  );
+  setWordStatusMessage(`Inserted table ${safeCols} x ${safeRows}.`);
+}
+
+function insertWordHtmlAtCursor(markup) {
+  focusWordEditor();
+  document.execCommand("insertHTML", false, markup);
+  updateWordStats();
+}
+
+async function loadWordFile(file) {
+  try {
+    const content = await file.text();
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+    if (extension === "html" || extension === "htm") {
+      els.wordEditor.innerHTML = content;
+    } else {
+      els.wordEditor.textContent = content;
+    }
+
+    state.word.documentName = file.name.replace(/\.[^.]+$/, "") || "Document1";
+    applyWordDocumentTitle();
+    updateWordStats();
+    setWordStatusMessage(`Loaded ${file.name}`);
+    focusWordEditor();
+    resetWordTypingMode();
+  } catch (error) {
+    setWordStatusMessage("Unable to open this file.", true);
+  }
+}
+
+function downloadWordDocument(fileName, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function updateWordStats(isExplicitRequest = false) {
+  if (!els.wordEditor || !els.wordStatusStats) {
+    return;
+  }
+
+  const text = (els.wordEditor.textContent || "").replace(/\u00a0/g, " ").trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  const characters = text ? text.length : 0;
+  els.wordStatusStats.textContent = `${words} word${words === 1 ? "" : "s"} | ${characters} characters`;
+
+  if (isExplicitRequest) {
+    setWordStatusMessage(`Word count: ${words}`);
+  }
+}
+
+function updateWordZoom() {
+  if (!els.wordCanvas) {
+    return;
+  }
+  els.wordCanvas.style.setProperty("--word-zoom", String(state.word.zoom));
+  if (els.wordToolbarZoom) {
+    const zoomValue = String(Number(state.word.zoom.toFixed(2)));
+    const hasMatchingOption = Array.from(els.wordToolbarZoom.options).some((option) => option.value === zoomValue);
+    if (hasMatchingOption) {
+      els.wordToolbarZoom.value = zoomValue;
+    }
+  }
+  if (els.wordStatusZoom) {
+    els.wordStatusZoom.textContent = `${Math.round(state.word.zoom * 100)}%`;
+  }
+}
+
+function updateWordViewClasses() {
+  if (!els.wordCanvas || !els.wordEditor) {
+    return;
+  }
+
+  els.wordCanvas.classList.toggle("is-ruler-hidden", !state.word.showRuler);
+  els.wordCanvas.classList.toggle("is-print-layout-off", !state.word.showPrintLayout);
+  els.wordEditor.classList.toggle("is-show-nonprinting", state.word.showNonPrinting);
+  els.wordEditor.classList.toggle("is-landscape", state.word.landscape);
+  syncWordMenuCheckStates();
+}
+
+function syncWordMenuCheckStates() {
+  setWordMenuCheckState("toggle-print-layout", state.word.showPrintLayout);
+  setWordMenuCheckState("toggle-ruler", state.word.showRuler);
+  setWordMenuCheckState("toggle-nonprinting", state.word.showNonPrinting);
+}
+
+function setWordMenuCheckState(action, isChecked) {
+  const item = document.querySelector(`.word-menu-item[data-word-action="${action}"]`);
+  if (!item) {
+    return;
+  }
+  const glyph = item.querySelector(".word-menu-glyph");
+  if (!glyph) {
+    return;
+  }
+  glyph.innerHTML = isChecked ? "&#10003;" : "";
+}
+
+function normalizeWordFileName(name) {
+  return name.replace(/[<>:"/\\|?*\x00-\x1F]/g, "").trim() || "Untitled-document";
+}
+
+function applyWordDocumentTitle() {
+  if (!els.wordDocTitle) {
+    return;
+  }
+  els.wordDocTitle.textContent = state.word.documentName || "Untitled document";
+}
+
+function setWordStatusMessage(message, isError = false) {
+  if (!els.wordStatusMessage) {
+    return;
+  }
+
+  els.wordStatusMessage.textContent = message;
+  els.wordStatusMessage.classList.toggle("is-error", isError);
+
+  if (wordStatusTimer) {
+    window.clearTimeout(wordStatusTimer);
+  }
+
+  if (message === "Ready") {
+    return;
+  }
+
+  wordStatusTimer = window.setTimeout(() => {
+    if (!els.wordStatusMessage) {
+      return;
+    }
+    els.wordStatusMessage.textContent = "Ready";
+    els.wordStatusMessage.classList.remove("is-error");
+  }, 2100);
 }
 
 function bindContactActions() {
@@ -2479,22 +3667,56 @@ function bindSettingsToggles() {
   });
 }
 
+function rotateBonusMessage() {
+  if (!els.bonusMessageText || !BONUS_MESSAGES.length) {
+    return;
+  }
+
+  const index = state.exploration.revealedCount % BONUS_MESSAGES.length;
+  els.bonusMessageText.textContent = BONUS_MESSAGES[index];
+  state.exploration.revealedCount += 1;
+  saveExplorationState();
+
+  if (els.bonusMessageCard) {
+    els.bonusMessageCard.classList.remove("is-pulse");
+    void els.bonusMessageCard.offsetWidth;
+    els.bonusMessageCard.classList.add("is-pulse");
+  }
+}
+
+function bindBonusInteractions() {
+  if (els.bonusMessageText && state.exploration.revealedCount > 0 && BONUS_MESSAGES.length) {
+    const index = (state.exploration.revealedCount - 1 + BONUS_MESSAGES.length) % BONUS_MESSAGES.length;
+    els.bonusMessageText.textContent = BONUS_MESSAGES[index];
+  }
+
+  els.bonusRevealButton?.addEventListener("click", () => {
+    rotateBonusMessage();
+  });
+}
+
 function startClocks() {
   const renderClock = () => {
     const now = new Date();
+    const timeText = now.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+    const dateText = now.toLocaleDateString([], {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit"
+    });
 
     if (els.taskbarClock) {
-      els.taskbarClock.textContent = now.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
-      });
+      els.taskbarClock.innerHTML = `
+        <span class="taskbar-clock-time">${timeText}</span>
+        <span class="taskbar-clock-date">${dateText}</span>
+      `;
     }
 
     if (els.lockScreenTime) {
-      els.lockScreenTime.textContent = now.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
-      });
+      els.lockScreenTime.textContent = timeText;
     }
 
     if (els.lockScreenDate) {
@@ -2543,7 +3765,7 @@ function filterStartEntries(term) {
   });
 }
 
-function openWindow(windowId) {
+function openWindow(windowId, options = {}) {
   const windowEl = document.getElementById(windowId);
   if (!windowEl) {
     return;
@@ -2563,6 +3785,12 @@ function openWindow(windowId) {
     renderExplorer();
   }
 
+  if (windowId === "detailWindow") {
+    window.setTimeout(() => {
+      focusWordEditor();
+    }, 70);
+  }
+
   if (wasHidden) {
     windowEl.classList.remove("is-opening");
     window.requestAnimationFrame(() => {
@@ -2570,10 +3798,11 @@ function openWindow(windowId) {
     });
     window.setTimeout(() => {
       windowEl.classList.remove("is-opening");
-    }, 240);
+    }, 320);
   }
 
   bringWindowToFront(windowEl);
+  markWindowVisited(windowId);
 }
 
 function closeWindow(windowId) {
@@ -2644,8 +3873,26 @@ function syncActiveWindow() {
 }
 
 function updateWindowButtons() {
+  updateWindowDepthState();
   updateTaskbarWindows();
   updateDesktopShortcutState();
+}
+
+function updateWindowDepthState() {
+  const openWindows = getOpenWindows();
+  openWindows.forEach((windowEl) => {
+    const isActive = windowEl.id === state.activeWindowId;
+    windowEl.classList.toggle("is-active-window", isActive);
+    windowEl.classList.toggle("is-inactive-window", !isActive);
+  });
+
+  state.windows.forEach((windowId) => {
+    const windowEl = document.getElementById(windowId);
+    if (!windowEl || !windowEl.hidden) {
+      return;
+    }
+    windowEl.classList.remove("is-active-window", "is-inactive-window");
+  });
 }
 
 function updateTaskbarWindows() {
@@ -2661,7 +3908,9 @@ function updateTaskbarWindows() {
       const isActive = windowEl.id === state.activeWindowId;
 
       return `
-        <button class="taskbar-window${isActive ? " is-active" : ""}" type="button" data-focus-window="${windowEl.id}">
+        <button class="taskbar-window${isActive ? " is-active" : ""}" type="button" aria-pressed="${String(
+          isActive
+        )}" data-focus-window="${windowEl.id}">
           ${title}
         </button>
       `;
@@ -2676,12 +3925,13 @@ function updateTaskbarWindows() {
         return;
       }
 
-      openWindow(targetId);
+      openWindow(targetId, { trigger: button });
     });
   });
 }
 
 function updateDesktopShortcutState() {
+  syncBonusVisibility();
   document.querySelectorAll(".desktop-icon").forEach((icon) => {
     const targetId = icon.getAttribute("data-open-window");
     const targetWindow = document.getElementById(targetId);
@@ -2774,8 +4024,8 @@ function hydrateProfile() {
   els.emailLink.textContent = profile.email;
   els.emailSocialLink.href = mailtoHref;
   els.startEmailLink.href = mailtoHref;
-  if (els.aboutEmailLink) {
-    els.aboutEmailLink.href = mailtoHref;
+  if (els.aboutResumeLink) {
+    els.aboutResumeLink.href = profile.resumeUrl || "#";
   }
   if (els.aboutLinkedinLink) {
     els.aboutLinkedinLink.href = profile.linkedin || "#";
@@ -2913,7 +4163,7 @@ function renderCodingListView(filteredProjects) {
             <button class="list-cell list-link" type="button" data-select-project="${escapeHtml(project.id)}">${escapeHtml(project.title)}</button>
             <span class="list-cell">${escapeHtml(tools)}</span>
             <span class="list-cell">${escapeHtml(String(project.year || ""))}</span>
-            <button class="small-btn list-cell-button" type="button" data-project-id="${escapeHtml(project.id)}">Details</button>
+            <button class="small-btn list-cell-button" type="button" data-project-id="${escapeHtml(project.id)}">Focus</button>
           </article>
         `;
       })
@@ -2944,7 +4194,7 @@ function updateCodingPreview(project) {
     <p class="detail-metric"><strong>Technologies:</strong> ${escapeHtml(technologies || "N/A")}</p>
     <div class="tag-row">${(project.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
     <div class="project-card-actions">
-      <button class="small-btn" type="button" data-project-id="${escapeHtml(project.id)}">Open in Word</button>
+      <button class="small-btn" type="button" data-project-id="${escapeHtml(project.id)}">Focus Project</button>
       ${linksMarkup}
     </div>
   `;
@@ -3190,8 +4440,11 @@ function renderGithubQuickLinks() {
         .map(
           (project) => `
             <button class="quick-row" type="button" data-project-id="${escapeHtml(project.id)}">
-              <span>${escapeHtml(project.title)}</span>
-              <span>${escapeHtml(String(project.year || ""))}</span>
+              <span class="quick-row-main">
+                <span class="quick-row-icon" aria-hidden="true">&#128194;</span>
+                <span class="quick-row-title">${escapeHtml(project.title)}</span>
+              </span>
+              <span class="quick-row-year">${escapeHtml(String(project.year || ""))}</span>
             </button>
           `
         )
@@ -3221,7 +4474,7 @@ function projectCardMarkup(project, isSelected) {
       <div class="tag-row">${toolTags}</div>
       <div class="project-card-actions">
         <button class="small-btn" type="button" data-select-project="${escapeHtml(project.id)}">Preview</button>
-        <button class="small-btn" type="button" data-project-id="${escapeHtml(project.id)}">Open details</button>
+        <button class="small-btn" type="button" data-project-id="${escapeHtml(project.id)}">Focus project</button>
       </div>
     </article>
   `;
@@ -3239,7 +4492,7 @@ function bindProjectActionButtons(container) {
     button.addEventListener("click", () => {
       const project = findProjectById(button.getAttribute("data-project-id"));
       if (project) {
-        showProjectDetails(project, true, "overview");
+        openProjectInPortfolio(project, true);
       }
     });
   });
@@ -3259,79 +4512,112 @@ function showDefaultProject() {
     return;
   }
 
-  const featuredProject = [
-    ...state.data.codingProjects.filter((project) => project.featured),
-    ...state.data.solidworksProjects.filter((project) => project.featured)
-  ][0];
-
-  if (!featuredProject) {
-    return;
-  }
-
-  state.selectedCodingProjectId = state.data.codingProjects[0]?.id || null;
-  showProjectDetails(featuredProject, false, "overview");
+  state.selectedCodingProjectId = state.data.codingProjects[0]?.id || state.data.solidworksProjects[0]?.id || null;
   renderCodingProjects();
 }
 
-function showProjectDetails(project, shouldOpenWindow = true, tab = "overview") {
-  state.activeDetailProjectId = project.id;
-  state.activeDetailTab = tab;
-
-  renderDetailTabs();
-  renderProjectDetails(project);
-
-  if (shouldOpenWindow) {
-    openWindow("detailWindow");
-  }
-}
-
-function renderDetailTabs() {
-  if (!els.detailTabs) {
+function openProjectInPortfolio(project, shouldOpenWindow = true) {
+  const isSolidworksProject = Boolean(state.data?.solidworksProjects?.some((entry) => entry.id === project.id));
+  if (isSolidworksProject) {
+    if (shouldOpenWindow) {
+      openWindow("solidworksWindow");
+    }
     return;
   }
 
-  els.detailTabs.querySelectorAll("[data-detail-tab]").forEach((button) => {
-    const isActive = button.getAttribute("data-detail-tab") === state.activeDetailTab;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-selected", String(isActive));
-  });
+  state.selectedCodingProjectId = project.id;
+  state.codingWorkspace = "projects";
+  updateCodingWorkspace();
+  renderCodingProjects();
+  if (shouldOpenWindow) {
+    openWindow("codingWindow");
+  }
 }
 
 function renderProjectDetails(project) {
+  // Deprecated: project detail rendering was replaced by the dedicated Word editor app.
+  if (!project) {
+    return;
+  }
+  return;
+
   let bodyMarkup = "";
+  const subtitle = [project.category, project.year, project.status].filter(Boolean).join(" • ");
+  const techChips = [...(project.tools || []), ...(project.technologies || [])]
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .slice(0, 8)
+    .map((item) => `<span class="tag">${escapeHtml(item)}</span>`)
+    .join("");
 
   if (state.activeDetailTab === "impact") {
     bodyMarkup = `
-      <p class="detail-metric"><strong>Problem:</strong> ${escapeHtml(project.problem || "N/A")}</p>
-      <p class="detail-metric"><strong>Solution:</strong> ${escapeHtml(project.solution || "N/A")}</p>
-      <p class="detail-metric"><strong>Role:</strong> ${escapeHtml(project.role || "N/A")}</p>
-      <div class="stat-strip">
-        <span class="stat-pill">Status: ${escapeHtml(project.status || "N/A")}</span>
-        <span class="stat-pill">Year: ${escapeHtml(String(project.year || ""))}</span>
-      </div>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Problem</h4>
+        <p class="doc-body">${escapeHtml(project.problem || "N/A")}</p>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Solution</h4>
+        <p class="doc-body">${escapeHtml(project.solution || "N/A")}</p>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Role</h4>
+        <p class="doc-body">${escapeHtml(project.role || "N/A")}</p>
+      </section>
+      <section class="doc-section">
+        <div class="stat-strip">
+          <span class="stat-pill">Status: ${escapeHtml(project.status || "N/A")}</span>
+          <span class="stat-pill">Year: ${escapeHtml(String(project.year || ""))}</span>
+        </div>
+      </section>
     `;
   } else if (state.activeDetailTab === "stack") {
     bodyMarkup = `
-      <p class="detail-metric"><strong>Tools:</strong> ${escapeHtml((project.tools || []).join(", ") || "N/A")}</p>
-      <p class="detail-metric"><strong>Technologies:</strong> ${escapeHtml(
-        (project.technologies || []).join(", ") || "N/A"
-      )}</p>
-      <div class="tag-row">${(project.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
-      <div class="project-card-actions">${projectLinkButtons(project)}</div>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Tech Stack</h4>
+        <div class="tag-row">${techChips || '<span class="muted">No stack details available.</span>'}</div>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Tags</h4>
+        <div class="tag-row">${(project.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("") || '<span class="muted">No tags available.</span>'}</div>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Project Links</h4>
+        <div class="project-card-actions">${projectLinkButtons(project)}</div>
+      </section>
     `;
   } else {
     bodyMarkup = `
-      <p class="detail-copy">${escapeHtml(project.fullDescription || project.shortDescription)}</p>
-      <p class="detail-metric"><strong>Category:</strong> ${escapeHtml(project.category || "N/A")}</p>
-      <p class="detail-metric"><strong>Summary:</strong> ${escapeHtml(project.aiSummary || project.shortDescription || "N/A")}</p>
-      <div class="tag-row">${(project.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Project Summary</h4>
+        <p class="doc-body">${escapeHtml(project.fullDescription || project.shortDescription)}</p>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Impact</h4>
+        <p class="doc-body">${escapeHtml(project.aiSummary || project.shortDescription || "N/A")}</p>
+      </section>
+      <section class="doc-section">
+        <h4 class="doc-section-title">Core Stack</h4>
+        <div class="tag-row">${techChips || '<span class="muted">No stack details available.</span>'}</div>
+      </section>
+      <section class="doc-section">
+        <div class="project-card-actions">${projectLinkButtons(project)}</div>
+      </section>
     `;
   }
 
   els.detailContent.innerHTML = `
-    <h3 class="detail-window-title">${escapeHtml(project.title)}</h3>
+    <header class="doc-header">
+      <p class="doc-kicker">Project Case Study</p>
+      <h3 class="detail-window-title">${escapeHtml(project.title)}</h3>
+      <p class="doc-subtitle">${escapeHtml(subtitle)}</p>
+    </header>
     ${bodyMarkup}
   `;
+
+  if (els.detailDocMeta) {
+    els.detailDocMeta.textContent = `${project.title} • ${project.year || "Current"}`;
+  }
 }
 
 function projectLinkButtons(project) {
@@ -3366,7 +4652,9 @@ function renderDataError() {
   els.solidworksProjectsGrid.innerHTML = message;
   els.solidworksTableBody.innerHTML = "<tr><td colspan=\"4\">Data unavailable.</td></tr>";
   els.solidworksSummary.innerHTML = "";
-  els.detailContent.innerHTML = message;
+  if (els.wordEditor) {
+    els.wordEditor.innerHTML = "<p>Project data is unavailable right now. The editor is still functional.</p>";
+  }
   if (els.githubQuickLinks) {
     els.githubQuickLinks.innerHTML = message;
   }

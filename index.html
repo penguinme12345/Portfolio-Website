@@ -41,9 +41,34 @@
           <span class="desktop-icon-label">About Me</span>
         </button>
 
+        <button class="desktop-icon" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
+          <img class="desktop-icon-image" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Contact Me</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="githubWindow" aria-label="Open Chrome">
+          <img class="desktop-icon-image" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Chrome</span>
+        </button>
+
         <button class="desktop-icon" type="button" data-open-window="codingWindow" aria-label="Open VSCode">
           <img class="desktop-icon-image" src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
           <span class="desktop-icon-label">VSCode</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="detailWindow" aria-label="Open Word">
+          <img class="desktop-icon-image" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Word</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="solidworksWindow" aria-label="Open Spreadsheet">
+          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Spreadsheet</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="financeWindow" aria-label="Open Finance Tracker">
+          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Finance Tracker</span>
         </button>
 
         <button
@@ -57,34 +82,21 @@
           <span class="desktop-icon-label">LoL Demo</span>
         </button>
 
-        <button class="desktop-icon" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
-          <img class="desktop-icon-image" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
-          <span class="desktop-icon-label">Contact Me</span>
-        </button>
-
-        <button class="desktop-icon" type="button" data-open-window="financeWindow" aria-label="Open Finance Tracker">
-          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
-          <span class="desktop-icon-label">Finance Tracker</span>
-        </button>
-
-        <button class="desktop-icon" type="button" data-open-window="githubWindow" aria-label="Open Chrome">
-          <img class="desktop-icon-image" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
-          <span class="desktop-icon-label">Chrome</span>
-        </button>
-
-        <button class="desktop-icon" type="button" data-open-window="detailWindow" aria-label="Open Word">
-          <img class="desktop-icon-image" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
-          <span class="desktop-icon-label">Word</span>
-        </button>
-
-        <button class="desktop-icon" type="button" data-open-window="solidworksWindow" aria-label="Open Spreadsheet">
-          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
-          <span class="desktop-icon-label">Spreadsheet</span>
-        </button>
-
         <button class="desktop-icon" type="button" data-open-window="settingsWindow" aria-label="Open Settings">
           <img class="desktop-icon-image" src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
           <span class="desktop-icon-label">Settings</span>
+        </button>
+
+        <button
+          class="desktop-icon desktop-icon-secret"
+          id="bonusDesktopIcon"
+          type="button"
+          data-open-window="bonusWindow"
+          aria-label="Open Bonus App"
+          hidden
+        >
+          <img class="desktop-icon-image" src="assets/images/contextMenu/star.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Bonus</span>
         </button>
       </section>
 
@@ -116,10 +128,14 @@
                 user experiences.
               </p>
               <div class="about-quick-links">
-                <a class="external-link about-quick-link is-primary" id="aboutEmailLink" href="mailto:jay.patell.2131@gmail.com">
+                <a class="external-link about-quick-link is-primary" id="aboutResumeLink" href="#" target="_blank" rel="noreferrer">
+                  <img src="assets/images/baseImages/default_folder.png" alt="" aria-hidden="true" />
+                  <span>View Resume</span>
+                </a>
+                <button class="external-link about-quick-link" id="aboutContactButton" type="button" data-open-window="contactWindow">
                   <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
                   <span>Contact Me</span>
-                </a>
+                </button>
                 <a
                   class="external-link about-quick-link"
                   id="aboutLinkedinLink"
@@ -590,7 +606,7 @@
       </section>
 
       <section
-        class="window window-medium"
+        class="window window-contact"
         id="contactWindow"
         data-window-title="Contact Me"
         data-x="550"
@@ -610,15 +626,29 @@
         </div>
         <div class="window-content contact-grid">
           <div>
-            <p class="window-lead">Reach out directly or open the portfolio documents below.</p>
-            <ul class="contact-list">
-              <li>Email: <a id="emailLink" href="mailto:jay.patell.2131@gmail.com">jay.patell.2131@gmail.com</a></li>
-              <li>LinkedIn: <a id="linkedinLink" href="https://www.linkedin.com/in/JayPatel190" target="_blank" rel="noreferrer">Profile</a></li>
-              <li>GitHub: <a id="contactGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">Repositories</a></li>
-              <li>Resume: <a id="resumeLink" href="assets/documents/resume.pdf" target="_blank" rel="noreferrer">Open document</a></li>
-            </ul>
-            <div class="project-card-actions">
-              <button class="small-btn" id="copyEmailButton" type="button">Copy email address</button>
+            <p class="window-lead">Quick Contact Actions</p>
+            <p class="detail-copy">Fast shortcuts to connect, view documents, or copy my email.</p>
+            <div class="contact-action-list">
+              <a class="contact-action-row" id="emailLink" href="mailto:jay.patell.2131@gmail.com">
+                <span class="contact-action-label">Email</span>
+                <span class="contact-action-value">jay.patell.2131@gmail.com</span>
+              </a>
+              <a class="contact-action-row" id="linkedinLink" href="https://www.linkedin.com/in/JayPatel190" target="_blank" rel="noreferrer">
+                <span class="contact-action-label">LinkedIn</span>
+                <span class="contact-action-value">Open Profile</span>
+              </a>
+              <a class="contact-action-row" id="contactGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">
+                <span class="contact-action-label">GitHub</span>
+                <span class="contact-action-value">View Repositories</span>
+              </a>
+              <a class="contact-action-row" id="resumeLink" href="assets/documents/resume.pdf" target="_blank" rel="noreferrer">
+                <span class="contact-action-label">Resume</span>
+                <span class="contact-action-value">Open Document</span>
+              </a>
+            </div>
+            <div class="project-card-actions contact-action-buttons">
+              <button class="small-btn" id="copyEmailButton" type="button">Copy Email</button>
+              <button class="small-btn" type="button" data-open-window="aboutWindow">Back to About</button>
             </div>
             <p class="muted toast-message" id="contactToast" aria-live="polite"></p>
             <div class="social-links">
@@ -650,7 +680,7 @@
       </section>
 
       <section
-        class="window window-medium"
+        class="window window-docs window-word"
         id="detailWindow"
         data-window-title="Word"
         data-x="300"
@@ -665,16 +695,191 @@
           </div>
           <div class="window-controls">
             <button class="window-control minimize-window" type="button" data-close-window="detailWindow" aria-label="Minimize Word">_</button>
+            <button class="window-control maximize-window" type="button" data-fullscreen-window="detailWindow" aria-label="Toggle full screen">□</button>
             <button class="window-control close-window" type="button" data-close-window="detailWindow" aria-label="Close Word">x</button>
           </div>
         </div>
-        <div class="window-content">
-          <div class="detail-tabs" id="detailTabs" role="tablist" aria-label="Project detail tabs">
-            <button class="detail-tab is-active" type="button" data-detail-tab="overview" role="tab">Overview</button>
-            <button class="detail-tab" type="button" data-detail-tab="impact" role="tab">Impact</button>
-            <button class="detail-tab" type="button" data-detail-tab="stack" role="tab">Stack & Links</button>
+        <div class="window-content word-shell">
+          <div class="word-menubar-shell" id="wordMenuShell">
+            <div class="word-doc-header">
+              <img class="word-doc-icon" src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+              <p class="word-doc-title" id="wordDocTitle">Untitled document</p>
+              <span class="word-doc-star" aria-hidden="true">&#9734;</span>
+              <div class="word-doc-header-actions" aria-hidden="true">
+                <span class="word-doc-action">&#128194;</span>
+                <span class="word-doc-action">&#9729;</span>
+              </div>
+            </div>
+            <div class="word-menu-row" id="wordMenuBar" role="menubar" aria-label="Document menus">
+              <button class="word-menu-button" type="button" data-word-menu-button="file" aria-expanded="false">File</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="edit" aria-expanded="false">Edit</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="view" aria-expanded="false">View</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="insert" aria-expanded="false">Insert</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="format" aria-expanded="false">Format</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="tools" aria-expanded="false">Tools</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="extensions" aria-expanded="false">Extensions</button>
+              <button class="word-menu-button" type="button" data-word-menu-button="help" aria-expanded="false">Help</button>
+            </div>
+
+            <div class="word-toolbar-row" id="wordToolbarRow" aria-label="Formatting toolbar">
+              <button class="word-toolbar-search" type="button">Menus</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="undo" aria-label="Undo">&#8630;</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="redo" aria-label="Redo">&#8631;</button>
+              <button class="word-toolbar-icon" type="button" data-word-action="print-doc" aria-label="Print">&#128424;</button>
+              <div class="word-toolbar-divider" aria-hidden="true"></div>
+              <select class="word-toolbar-select word-toolbar-select-zoom" id="wordToolbarZoom" aria-label="Zoom">
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1" selected>100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.25">125%</option>
+                <option value="1.5">150%</option>
+              </select>
+              <select class="word-toolbar-select" id="wordToolbarStyle" aria-label="Paragraph style">
+                <option value="p" selected>Normal text</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+              </select>
+              <select class="word-toolbar-select" id="wordToolbarFont" aria-label="Font family">
+                <option value="Arial" selected>Arial</option>
+                <option value="Calibri">Calibri</option>
+                <option value="Cambria">Cambria</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Verdana">Verdana</option>
+              </select>
+              <button class="word-toolbar-icon" type="button" data-word-action="toolbar-font-dec" aria-label="Decrease font size">-</button>
+              <input class="word-toolbar-size" id="wordToolbarFontSize" type="number" min="8" max="72" step="1" value="11" aria-label="Font size" />
+              <button class="word-toolbar-icon" type="button" data-word-action="toolbar-font-inc" aria-label="Increase font size">+</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="bold" aria-label="Bold"><strong>B</strong></button>
+              <button class="word-toolbar-icon" type="button" data-word-command="italic" aria-label="Italic"><em>I</em></button>
+              <button class="word-toolbar-icon" type="button" data-word-command="underline" aria-label="Underline"><u>U</u></button>
+              <button class="word-toolbar-icon" type="button" data-word-command="insertUnorderedList" aria-label="Bullet list">&#8226;</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="insertOrderedList" aria-label="Numbered list">1.</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="justifyLeft" aria-label="Align left">&#8676;</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="justifyCenter" aria-label="Align center">&#8596;</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="justifyRight" aria-label="Align right">&#8677;</button>
+              <button class="word-toolbar-icon" type="button" data-word-command="removeFormat" aria-label="Clear formatting">&#9587;</button>
+            </div>
+
+            <div class="word-menu-layer" id="wordMenuLayer">
+              <div class="word-menu-dropdown" data-word-menu="file" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="new"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9638;</span>New</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="open"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128193;</span>Open</span><span class="word-menu-shortcut">Ctrl+O</span></button>
+                <button class="word-menu-item" type="button" data-word-action="make-copy"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128196;</span>Make a copy</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="share-doc"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9783;</span>Share</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="email-doc"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9993;</span>Email</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="save-html"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8681;</span>Download (.html)</span></button>
+                <button class="word-menu-item" type="button" data-word-action="save-txt"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8681;</span>Download (.txt)</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="rename-document"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9998;</span>Rename</span></button>
+                <button class="word-menu-item is-disabled" type="button" disabled><span class="word-menu-item-label"><span class="word-menu-glyph">&#128465;</span>Move to trash</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="page-setup"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128196;</span>Page setup</span></button>
+                <button class="word-menu-item" type="button" data-word-action="print-doc"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128424;</span>Print</span><span class="word-menu-shortcut">Ctrl+P</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="edit" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-command="undo"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8630;</span>Undo</span><span class="word-menu-shortcut">Ctrl+Z</span></button>
+                <button class="word-menu-item" type="button" data-word-command="redo"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8631;</span>Redo</span><span class="word-menu-shortcut">Ctrl+Y</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-command="cut"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9986;</span>Cut</span><span class="word-menu-shortcut">Ctrl+X</span></button>
+                <button class="word-menu-item" type="button" data-word-command="copy"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128203;</span>Copy</span><span class="word-menu-shortcut">Ctrl+C</span></button>
+                <button class="word-menu-item" type="button" data-word-action="paste"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128203;</span>Paste</span><span class="word-menu-shortcut">Ctrl+V</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-command="selectAll"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9635;</span>Select all</span><span class="word-menu-shortcut">Ctrl+A</span></button>
+                <button class="word-menu-item" type="button" data-word-command="delete"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128465;</span>Delete</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="find-replace"><span class="word-menu-item-label"><span class="word-menu-glyph">&#10226;</span>Find and replace</span><span class="word-menu-shortcut">Ctrl+H</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="view" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="toggle-print-layout"><span class="word-menu-item-label"><span class="word-menu-glyph">&#10003;</span>Show print layout</span></button>
+                <button class="word-menu-item" type="button" data-word-action="toggle-ruler"><span class="word-menu-item-label"><span class="word-menu-glyph">&#10003;</span>Show ruler</span></button>
+                <button class="word-menu-item" type="button" data-word-action="toggle-nonprinting"><span class="word-menu-item-label"><span class="word-menu-glyph">&#183;</span>Show non-printing characters</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="zoom-out"><span class="word-menu-item-label"><span class="word-menu-glyph">-</span>Zoom out</span></button>
+                <button class="word-menu-item" type="button" data-word-action="zoom-reset"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9679;</span>Reset zoom</span></button>
+                <button class="word-menu-item" type="button" data-word-action="zoom-in"><span class="word-menu-item-label"><span class="word-menu-glyph">+</span>Zoom in</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="toggle-fullscreen"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9974;</span>Full screen</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" id="wordInsertMenu" data-word-menu="insert" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="insert-image"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128247;</span>Image</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" id="wordInsertTableItem" type="button" data-word-action="insert-table" aria-haspopup="true" aria-expanded="false"><span class="word-menu-item-label"><span class="word-menu-glyph word-menu-glyph-table" aria-hidden="true"></span>Table</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <div class="word-table-picker" id="wordTablePicker" hidden>
+                  <div class="word-table-picker-grid" id="wordTablePickerGrid" role="grid" aria-label="Table size picker"></div>
+                  <p class="word-table-picker-size" id="wordTablePickerSize">1 x 1</p>
+                </div>
+                <button class="word-menu-item" type="button" data-word-command="createLink"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128279;</span>Link</span><span class="word-menu-shortcut">Ctrl+K</span></button>
+                <button class="word-menu-item" type="button" data-word-action="insert-date"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128197;</span>Date</span></button>
+                <button class="word-menu-item" type="button" data-word-action="insert-time"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128337;</span>Time</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="insert-line"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9472;</span>Horizontal line</span></button>
+                <button class="word-menu-item" type="button" data-word-action="insert-page-break"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9166;</span>Break</span></button>
+                <button class="word-menu-item is-disabled" type="button" disabled><span class="word-menu-item-label"><span class="word-menu-glyph">+</span>Comment</span><span class="word-menu-shortcut">Ctrl+Alt+M</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="format" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-command="bold"><span class="word-menu-item-label"><span class="word-menu-glyph"><strong>B</strong></span>Text</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="style-normal"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8801;</span>Paragraph styles</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="format-align-indent"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8644;</span>Align & indent</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="format-line-space"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8597;</span>Line & paragraph spacing</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="format-bullets"><span class="word-menu-item-label"><span class="word-menu-glyph">&#8226;</span>Bullets & numbering</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="insert-page-number"><span class="word-menu-item-label"><span class="word-menu-glyph">#</span>Page numbers</span></button>
+                <button class="word-menu-item" type="button" data-word-action="toggle-page-orientation"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9633;</span>Page orientation</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-command="removeFormat"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9587;</span>Clear formatting</span><span class="word-menu-shortcut">Ctrl+\\</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="tools" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="proofread"><span class="word-menu-item-label"><span class="word-menu-glyph">A</span>Spelling and grammar</span><span class="word-menu-shortcut">&#9654;</span></button>
+                <button class="word-menu-item" type="button" data-word-action="word-count"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9635;</span>Word count</span><span class="word-menu-shortcut">Ctrl+Shift+C</span></button>
+                <button class="word-menu-item" type="button" data-word-action="review-edits"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9998;</span>Review suggested edits</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="translate-document"><span class="word-menu-item-label"><span class="word-menu-glyph">&#127760;</span>Translate document</span></button>
+                <button class="word-menu-item" type="button" data-word-action="voice-typing"><span class="word-menu-item-label"><span class="word-menu-glyph">&#127908;</span>Voice typing</span><span class="word-menu-shortcut">Ctrl+Shift+S</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="open-preferences"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9881;</span>Preferences</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="extensions" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="extensions-market"><span class="word-menu-item-label"><span class="word-menu-glyph">&#129513;</span>Add-ons marketplace</span></button>
+                <button class="word-menu-item" type="button" data-word-action="extensions-manage"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9881;</span>Manage add-ons</span></button>
+                <button class="word-menu-item" type="button" data-word-action="extensions-script"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128187;</span>Apps Script</span></button>
+              </div>
+
+              <div class="word-menu-dropdown" data-word-menu="help" role="menu" hidden>
+                <button class="word-menu-item" type="button" data-word-action="help-search"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128269;</span>Search the menus</span><span class="word-menu-shortcut">Alt+/</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="help-docs"><span class="word-menu-item-label"><span class="word-menu-glyph">?</span>Docs Help</span></button>
+                <button class="word-menu-item" type="button" data-word-action="help-training"><span class="word-menu-item-label"><span class="word-menu-glyph">&#127891;</span>Training</span></button>
+                <button class="word-menu-item" type="button" data-word-action="help-updates"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128246;</span>Updates</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="help-privacy"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128220;</span>Privacy Policy</span></button>
+                <button class="word-menu-item" type="button" data-word-action="help-terms"><span class="word-menu-item-label"><span class="word-menu-glyph">&#128220;</span>Terms of Service</span></button>
+                <div class="word-menu-divider" role="separator"></div>
+                <button class="word-menu-item" type="button" data-word-action="help-shortcuts"><span class="word-menu-item-label"><span class="word-menu-glyph">&#9000;</span>Keyboard shortcuts</span><span class="word-menu-shortcut">Ctrl+/</span></button>
+              </div>
+            </div>
           </div>
-          <div id="detailContent"></div>
+
+          <div class="word-canvas" id="wordCanvas">
+            <div class="word-ruler"></div>
+            <article class="word-page" id="wordEditor" contenteditable="true" spellcheck="true" aria-label="Word document editor"></article>
+          </div>
+
+          <div class="word-statusbar">
+            <span id="wordStatusMessage">Ready</span>
+            <span id="wordStatusStats">0 words | 0 characters</span>
+            <span id="wordStatusZoom">100%</span>
+          </div>
+
+          <input id="wordFileInput" type="file" accept=".txt,.md,.html,.htm" hidden />
         </div>
       </section>
 
@@ -739,6 +944,38 @@
           </div>
         </div>
       </section>
+
+      <section
+        class="window window-compact"
+        id="bonusWindow"
+        data-window-title="Bonus.exe"
+        data-x="420"
+        data-y="148"
+        aria-labelledby="bonusTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/contextMenu/star.png" alt="" aria-hidden="true" />
+            <h2 id="bonusTitle">Bonus.exe</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="bonusWindow" aria-label="Minimize Bonus">_</button>
+            <button class="window-control close-window" type="button" data-close-window="bonusWindow" aria-label="Close Bonus">x</button>
+          </div>
+        </div>
+        <div class="window-content bonus-shell">
+          <p class="window-lead">Exploration Unlocked</p>
+          <p class="detail-copy">You discovered every main app. This window rotates hidden notes and build insights.</p>
+          <div class="bonus-card" id="bonusMessageCard">
+            <p class="bonus-label">Hidden Note</p>
+            <p class="bonus-message" id="bonusMessageText">Click reveal to rotate a new note.</p>
+          </div>
+          <div class="project-card-actions">
+            <button class="small-btn" id="bonusRevealButton" type="button">Reveal Note</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <aside id="desktopContextMenu" class="desktop-context-menu" hidden aria-label="Desktop context menu">
@@ -763,8 +1000,8 @@
         <span>Contact Me</span>
       </button>
       <button class="context-menu-item" type="button" data-open-window="detailWindow">
-        <img src="assets/images/contextMenu/star.png" alt="" aria-hidden="true" />
-        <span>Featured Project</span>
+        <img src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+        <span>Word</span>
       </button>
       <button class="context-menu-item" type="button" data-open-window="aboutWindow">
         <img src="assets/images/contextMenu/credits.svg" alt="" aria-hidden="true" />
@@ -842,43 +1079,60 @@
           </div>
         </div>
 
-        <div class="start-tile-grid">
-          <button class="start-tile" type="button" data-open-window="myPcWindow">
-            <img src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
-            <span>My PC</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="aboutWindow">
-            <img src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
-            <span>About</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="codingWindow">
-            <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
-            <span>Code</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo">
-            <img src="assets/images/apps/leagueOfLegends.svg" alt="" aria-hidden="true" />
-            <span>LoL Demo</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="githubWindow">
-            <img src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
-            <span>Web</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="contactWindow">
-            <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
-            <span>Mail</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="financeWindow">
-            <img src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
-            <span>Finance</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="detailWindow">
-            <img src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
-            <span>Docs</span>
-          </button>
-          <button class="start-tile" type="button" data-open-window="settingsWindow">
-            <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
-            <span>Settings</span>
-          </button>
+        <div class="start-tile-groups">
+          <section class="start-tile-group">
+            <p class="start-tile-group-label">Profile</p>
+            <div class="start-tile-grid">
+              <button class="start-tile start-tile-wide" type="button" data-open-window="aboutWindow" data-subtitle="Background & Skills">
+                <img src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
+                <span>About</span>
+              </button>
+              <button class="start-tile" type="button" data-open-window="contactWindow" data-subtitle="Reach Out">
+                <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
+                <span>Contact</span>
+              </button>
+              <button class="start-tile" type="button" data-open-window="detailWindow" data-subtitle="Document Editor">
+                <img src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
+                <span>Word</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="start-tile-group">
+            <p class="start-tile-group-label">Projects & Code</p>
+            <div class="start-tile-grid">
+              <button class="start-tile" type="button" data-open-window="codingWindow" data-subtitle="Project Browser">
+                <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
+                <span>Code</span>
+              </button>
+              <button class="start-tile" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo" data-subtitle="Interactive">
+                <img src="assets/images/apps/leagueOfLegends.svg" alt="" aria-hidden="true" />
+                <span>LoL Demo</span>
+              </button>
+              <button class="start-tile start-tile-wide" type="button" data-open-window="financeWindow" data-subtitle="Budget & Trends">
+                <img src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+                <span>Finance</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="start-tile-group">
+            <p class="start-tile-group-label">Tools</p>
+            <div class="start-tile-grid">
+              <button class="start-tile" type="button" data-open-window="myPcWindow" data-subtitle="File Explorer">
+                <img src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+                <span>My PC</span>
+              </button>
+              <button class="start-tile" type="button" data-open-window="githubWindow" data-subtitle="Web Hub">
+                <img src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
+                <span>Web</span>
+              </button>
+              <button class="start-tile" type="button" data-open-window="settingsWindow" data-subtitle="Theme & UI">
+                <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
+                <span>Settings</span>
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </aside>
@@ -919,6 +1173,7 @@
       </div>
 
       <div class="system-tray" aria-label="System tray">
+        <span class="tray-divider" aria-hidden="true"></span>
         <button class="tray-icon-button" type="button" data-open-window="settingsWindow" aria-label="Open settings">
           <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
         </button>
