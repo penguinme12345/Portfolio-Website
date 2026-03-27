@@ -614,6 +614,7 @@ function renderAboutModePanel() {
 
   const codingProjects = state.data.codingProjects || [];
   const allProjects = [...codingProjects, ...(state.data.solidworksProjects || [])];
+  const formatProjectCount = (count) => `${count} project${count === 1 ? "" : "s"}`;
 
   if (state.aboutMode === "journey") {
     const timeline = [...allProjects]
@@ -622,7 +623,12 @@ function renderAboutModePanel() {
 
     els.aboutModePanel.innerHTML = timeline.length
       ? `
-        <div class="about-timeline">
+        <div class="about-mode-content about-mode-content-journey">
+          <div class="about-panel-head">
+            <p class="about-panel-kicker">Build Timeline</p>
+            <p class="about-panel-subtle">Recent milestones and project evolution.</p>
+          </div>
+          <div class="about-timeline">
           ${timeline
             .map(
               (project) => `
@@ -636,6 +642,7 @@ function renderAboutModePanel() {
               `
             )
             .join("")}
+          </div>
         </div>
       `
       : '<p class="muted">Project milestones will appear here as they are added.</p>';
@@ -649,20 +656,26 @@ function renderAboutModePanel() {
 
     els.aboutModePanel.innerHTML = activeProjects.length
       ? `
-        <div class="about-mode-cards">
-          ${activeProjects
-            .map(
-              (project) => `
-                <article class="about-mode-card">
-                  <p class="about-mode-card-title">${escapeHtml(project.title)}</p>
-                  <p class="about-mode-card-copy">${escapeHtml(project.aiSummary || project.shortDescription || "")}</p>
-                  <div class="about-mini-tags">
-                    ${(project.tools || []).slice(0, 3).map((tool) => `<span class="tag">${escapeHtml(tool)}</span>`).join("")}
-                  </div>
-                </article>
-              `
-            )
-            .join("")}
+        <div class="about-mode-content about-mode-content-now">
+          <div class="about-panel-head">
+            <p class="about-panel-kicker">Currently Building</p>
+            <p class="about-panel-subtle">What is active right now.</p>
+          </div>
+          <div class="about-mode-cards">
+            ${activeProjects
+              .map(
+                (project) => `
+                  <article class="about-mode-card">
+                    <p class="about-mode-card-title">${escapeHtml(project.title)}</p>
+                    <p class="about-mode-card-copy">${escapeHtml(project.aiSummary || project.shortDescription || "")}</p>
+                    <div class="about-mini-tags">
+                      ${(project.tools || []).slice(0, 3).map((tool) => `<span class="tag">${escapeHtml(tool)}</span>`).join("")}
+                    </div>
+                  </article>
+                `
+              )
+              .join("")}
+          </div>
         </div>
       `
       : '<p class="muted">Current build focus will be listed here.</p>';
@@ -678,27 +691,73 @@ function renderAboutModePanel() {
 
   const topTools = Object.entries(toolCounts)
     .sort((left, right) => right[1] - left[1])
-    .slice(0, 4);
-  const maxCount = Math.max(...topTools.map((item) => item[1]), 1);
+    .slice(0, 6);
+
+  const getToolDepthLabel = (count) => {
+    if (count >= 3) {
+      return "Core stack";
+    }
+    if (count === 2) {
+      return "Frequent usage";
+    }
+    return "Focused usage";
+  };
 
   els.aboutModePanel.innerHTML = `
-    <div class="about-skill-list">
-      ${topTools.length
-        ? topTools
-            .map(
-              ([tool, count]) => `
-                <div class="about-skill-row">
-                  <p class="about-skill-label">${escapeHtml(tool)}</p>
-                  <div class="about-skill-track">
-                    <span class="about-skill-fill" style="width: ${Math.round((count / maxCount) * 100)}%"></span>
-                  </div>
-                  <p class="about-skill-value">${escapeHtml(String(count))} projects</p>
-                </div>
-              `
-            )
-            .join("")
-        : '<p class="muted">Tool usage data appears once projects are loaded.</p>'}
+    <div class="about-mode-content about-mode-content-overview">
+      <div class="about-panel-head">
+        <p class="about-panel-kicker">Tech Stack</p>
+        <p class="about-panel-subtle">Tools used across shipped projects.</p>
+      </div>
+      <div class="about-tech-grid">
+        ${topTools.length
+          ? topTools
+              .map(
+                ([tool, count]) => `
+                  <article class="about-tech-card">
+                    <p class="about-tech-title">${escapeHtml(tool)}</p>
+                    <p class="about-tech-meta">${getToolDepthLabel(count)}</p>
+                    <p class="about-tech-count">${formatProjectCount(count)}</p>
+                  </article>
+                `
+              )
+              .join("")
+          : '<p class="muted">Tool usage data appears once projects are loaded.</p>'}
+      </div>
     </div>
+  `;
+
+  const modeContent = els.aboutModePanel.querySelector(".about-mode-content");
+  if (modeContent) {
+    modeContent.classList.remove("is-entering");
+    void modeContent.offsetWidth;
+    modeContent.classList.add("is-entering");
+  }
+}
+
+function populateAboutHighlights() {
+  if (!els.aboutHighlights || !state.data) {
+    return;
+  }
+
+  const allProjects = [...state.data.codingProjects, ...state.data.solidworksProjects];
+  const featuredCount = allProjects.filter((project) => project.featured).length;
+  const topTools = [...new Set(state.data.codingProjects.flatMap((project) => project.tools || []))].slice(0, 3);
+  const formatProjectCount = (count) => `${count} project${count === 1 ? "" : "s"}`;
+
+  els.aboutHighlights.innerHTML = `
+    <article class="insight-card">
+      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#9733;</span>Featured Projects</p>
+      <p class="insight-value">${escapeHtml(formatProjectCount(featuredCount))}</p>
+    </article>
+    <article class="insight-card">
+      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#9881;</span>Main Stack</p>
+      <p class="insight-value">${escapeHtml(topTools.join(", ") || "Custom stack")}</p>
+    </article>
+    <article class="insight-card">
+      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#10024;</span>Current Focus</p>
+      <p class="insight-value">ML apps and full-stack tools</p>
+    </article>
   `;
 }
 
@@ -2730,31 +2789,6 @@ function hydrateProfile() {
   if (els.copyEmailButton) {
     els.copyEmailButton.dataset.email = profile.email;
   }
-}
-
-function populateAboutHighlights() {
-  if (!els.aboutHighlights || !state.data) {
-    return;
-  }
-
-  const allProjects = [...state.data.codingProjects, ...state.data.solidworksProjects];
-  const featuredCount = allProjects.filter((project) => project.featured).length;
-  const topTools = [...new Set(state.data.codingProjects.flatMap((project) => project.tools || []))].slice(0, 4);
-
-  els.aboutHighlights.innerHTML = `
-    <article class="insight-card">
-      <p class="insight-label">Featured Work</p>
-      <p class="insight-value">${escapeHtml(String(featuredCount))} projects</p>
-    </article>
-    <article class="insight-card">
-      <p class="insight-label">Top Stack</p>
-      <p class="insight-value">${escapeHtml(topTools.join(", ") || "Custom stack")}</p>
-    </article>
-    <article class="insight-card">
-      <p class="insight-label">Current Focus</p>
-      <p class="insight-value">Software + Machine Learning</p>
-    </article>
-  `;
 }
 
 function populateToolFilter() {
