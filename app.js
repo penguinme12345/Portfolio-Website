@@ -1,4 +1,4 @@
-const DEFAULT_WALLPAPER = "assets/images/wallpapers/default_wallpaper.jpg";
+const DEFAULT_WALLPAPER = "assets/images/wallpapers/wallpaper2.jpg";
 const SETTINGS_STORAGE_KEY = "portfolio_desktop_settings_v1";
 const LOL_DEMO_DEFAULTS = {
   champion: "ahri",
@@ -55,11 +55,96 @@ const LOL_ROLE_MODIFIERS = {
   ADC: { objective: 1, vision: 0, deaths: -1 },
   SUPPORT: { objective: 3, vision: 8, deaths: 0 }
 };
+const EXPLORER_ROOT_ID = "my-pc";
+const EXPLORER_TIMESTAMP = "2026-03-27 10:31 PM";
+const EXPLORER_APP_LIBRARY = [
+  {
+    id: "my-pc-app",
+    name: "My PC.exe",
+    size: "6 KB",
+    modified: "2026-03-27 10:42 PM",
+    action: { type: "open-window", windowId: "myPcWindow" },
+    folderPath: ["program-files", "portfolio-core"]
+  },
+  {
+    id: "about-app",
+    name: "About Me.exe",
+    size: "4 KB",
+    modified: "2026-03-27 10:36 PM",
+    action: { type: "open-window", windowId: "aboutWindow" },
+    folderPath: ["program-files", "portfolio-core"]
+  },
+  {
+    id: "contact-app",
+    name: "Contact Me.exe",
+    size: "4 KB",
+    modified: "2026-03-27 10:37 PM",
+    action: { type: "open-window", windowId: "contactWindow" },
+    folderPath: ["program-files", "portfolio-core"]
+  },
+  {
+    id: "settings-app",
+    name: "Settings.exe",
+    size: "3 KB",
+    modified: "2026-03-27 10:34 PM",
+    action: { type: "open-window", windowId: "settingsWindow" },
+    folderPath: ["program-files", "portfolio-core"]
+  },
+  {
+    id: "vscode-app",
+    name: "VSCode.exe",
+    size: "9 KB",
+    modified: "2026-03-27 10:40 PM",
+    action: { type: "open-window", windowId: "codingWindow" },
+    folderPath: ["program-files", "development-tools"]
+  },
+  {
+    id: "chrome-app",
+    name: "Chrome.exe",
+    size: "6 KB",
+    modified: "2026-03-27 10:38 PM",
+    action: { type: "open-window", windowId: "githubWindow" },
+    folderPath: ["program-files", "development-tools"]
+  },
+  {
+    id: "lol-demo-app",
+    name: "LoL Demo.exe",
+    size: "7 KB",
+    modified: "2026-03-27 10:43 PM",
+    action: { type: "open-window", windowId: "codingWindow", workspace: "lol-demo" },
+    folderPath: ["program-files", "game-demos"]
+  },
+  {
+    id: "finance-app",
+    name: "Finance Tracker.exe",
+    size: "8 KB",
+    modified: "2026-03-27 10:44 PM",
+    action: { type: "open-window", windowId: "financeWindow" },
+    folderPath: ["program-files", "productivity"]
+  },
+  {
+    id: "word-app",
+    name: "Word.exe",
+    size: "5 KB",
+    modified: "2026-03-27 10:33 PM",
+    action: { type: "open-window", windowId: "detailWindow" },
+    folderPath: ["program-files", "productivity"]
+  },
+  {
+    id: "spreadsheet-app",
+    name: "Spreadsheet.exe",
+    size: "5 KB",
+    modified: "2026-03-27 10:33 PM",
+    action: { type: "open-window", windowId: "solidworksWindow" },
+    folderPath: ["program-files", "productivity"]
+  }
+];
 
 const state = {
   data: null,
   currentWallpaper: DEFAULT_WALLPAPER,
   windows: [
+    "myPcWindow",
     "aboutWindow",
     "codingWindow",
     "financeWindow",
@@ -76,6 +161,24 @@ const state = {
   },
   codingWorkspace: "projects",
   codingView: "cards",
+  aboutMode: "overview",
+  explorer: {
+    path: [EXPLORER_ROOT_ID],
+    history: [[EXPLORER_ROOT_ID]],
+    historyIndex: 0,
+    selectedEntryId: null,
+    search: "",
+    root: null,
+    sortBy: "name",
+    sortDirection: "asc",
+    nextCustomId: 1,
+    contextEntryId: null,
+    dragEntryId: null,
+    renamingId: null,
+    renameDraft: "",
+    clipboard: null,
+    renameNeedsFocus: false
+  },
   selectedCodingProjectId: null,
   lolDemo: { ...LOL_DEMO_DEFAULTS },
   solidworksSort: "newest",
@@ -105,6 +208,23 @@ const els = {
   aboutSummary: document.getElementById("aboutSummary"),
   aboutHighlights: document.getElementById("aboutHighlights"),
   profileQuickFacts: document.getElementById("profileQuickFacts"),
+  aboutModePanel: document.getElementById("aboutModePanel"),
+  aboutEmailLink: document.getElementById("aboutEmailLink"),
+  aboutLinkedinLink: document.getElementById("aboutLinkedinLink"),
+  aboutGithubLink: document.getElementById("aboutGithubLink"),
+  explorerBreadcrumb: document.getElementById("explorerBreadcrumb"),
+  explorerRows: document.getElementById("explorerRows"),
+  explorerSearch: document.getElementById("explorerSearch"),
+  explorerBackButton: document.getElementById("explorerBackButton"),
+  explorerUpButton: document.getElementById("explorerUpButton"),
+  explorerRefreshButton: document.getElementById("explorerRefreshButton"),
+  explorerSortButton: document.getElementById("explorerSortButton"),
+  explorerContextMenu: document.getElementById("explorerContextMenu"),
+  explorerItemContextMenu: document.getElementById("explorerItemContextMenu"),
+  explorerSortSubmenu: document.getElementById("explorerSortSubmenu"),
+  explorerNewSubmenu: document.getElementById("explorerNewSubmenu"),
+  explorerItemCount: document.getElementById("explorerItemCount"),
+  explorerPathLabel: document.getElementById("explorerPathLabel"),
   codingProjectsWorkspace: document.getElementById("codingProjectsWorkspace"),
   lolDemoWorkspace: document.getElementById("lolDemoWorkspace"),
   codingProjectsGrid: document.getElementById("codingProjectsGrid"),
@@ -156,6 +276,8 @@ const els = {
   emailSocialLink: document.getElementById("emailSocialLink"),
   linkedinSocialLink: document.getElementById("linkedinSocialLink"),
   githubSocialLink: document.getElementById("githubSocialLink"),
+  contactSideLinkedinLink: document.getElementById("contactSideLinkedinLink"),
+  contactSideGithubLink: document.getElementById("contactSideGithubLink"),
   copyEmailButton: document.getElementById("copyEmailButton"),
   contactToast: document.getElementById("contactToast"),
   startUserName: document.getElementById("startUserName"),
@@ -183,6 +305,8 @@ async function init() {
   bindGlobalShortcuts();
   bindLockScreen();
   bindContextMenu();
+  bindAboutControls();
+  bindExplorerControls();
   bindWallpaperPicker();
   bindSearchAndFilter();
   bindCodingWorkspaceTabs();
@@ -196,6 +320,8 @@ async function init() {
   syncLolDemoControlsFromState();
   updateCodingWorkspace();
   runLolDemoAnalysis();
+  initializeExplorerData();
+  renderExplorer();
 
   try {
     const response = await fetch("./data/projects.json");
@@ -206,11 +332,14 @@ async function init() {
     state.data = await response.json();
     hydrateProfile();
     populateAboutHighlights();
+    renderAboutModePanel();
     populateToolFilter();
     renderCodingProjects();
     renderSolidworksProjects();
     renderGithubQuickLinks();
     showDefaultProject();
+    initializeExplorerData();
+    renderExplorer();
   } catch (error) {
     renderDataError();
   }
@@ -301,6 +430,7 @@ function bindStartMenu() {
   document.addEventListener("click", () => {
     closeStartMenu();
     hideContextMenu();
+    hideExplorerMenus();
   });
 }
 
@@ -368,6 +498,14 @@ function bindWindowDragging() {
 function bindGlobalShortcuts() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      const explorerMenuOpen =
+        (els.explorerContextMenu && !els.explorerContextMenu.hidden) ||
+        (els.explorerItemContextMenu && !els.explorerItemContextMenu.hidden);
+      if (explorerMenuOpen) {
+        hideExplorerMenus();
+        return;
+      }
+
       if (els.desktopContextMenu && !els.desktopContextMenu.hidden) {
         hideContextMenu();
         return;
@@ -391,6 +529,7 @@ function bindGlobalShortcuts() {
   window.addEventListener("resize", () => {
     syncWindowPositions();
     hideContextMenu();
+    hideExplorerMenus();
   });
 }
 
@@ -434,6 +573,1627 @@ function bindContextMenu() {
 
     hideContextMenu();
   });
+}
+
+function bindAboutControls() {
+  const buttons = document.querySelectorAll("[data-about-mode]");
+  if (!buttons.length) {
+    return;
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.aboutMode = button.getAttribute("data-about-mode") || "overview";
+      updateAboutModeButtons();
+      renderAboutModePanel();
+    });
+  });
+
+  updateAboutModeButtons();
+}
+
+function updateAboutModeButtons() {
+  document.querySelectorAll("[data-about-mode]").forEach((button) => {
+    const isActive = button.getAttribute("data-about-mode") === state.aboutMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function renderAboutModePanel() {
+  if (!els.aboutModePanel) {
+    return;
+  }
+
+  if (!state.data) {
+    els.aboutModePanel.innerHTML = "";
+    return;
+  }
+
+  const codingProjects = state.data.codingProjects || [];
+  const allProjects = [...codingProjects, ...(state.data.solidworksProjects || [])];
+
+  if (state.aboutMode === "journey") {
+    const timeline = [...allProjects]
+      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
+      .slice(0, 5);
+
+    els.aboutModePanel.innerHTML = timeline.length
+      ? `
+        <div class="about-timeline">
+          ${timeline
+            .map(
+              (project) => `
+                <article class="about-timeline-row">
+                  <p class="about-timeline-year">${escapeHtml(String(project.year || "Recent"))}</p>
+                  <div>
+                    <p class="about-timeline-title">${escapeHtml(project.title)}</p>
+                    <p class="about-timeline-copy">${escapeHtml(project.shortDescription || "")}</p>
+                  </div>
+                </article>
+              `
+            )
+            .join("")}
+        </div>
+      `
+      : '<p class="muted">Project milestones will appear here as they are added.</p>';
+    return;
+  }
+
+  if (state.aboutMode === "now") {
+    const activeProjects = codingProjects
+      .filter((project) => String(project.status || "").toLowerCase() === "active")
+      .slice(0, 3);
+
+    els.aboutModePanel.innerHTML = activeProjects.length
+      ? `
+        <div class="about-mode-cards">
+          ${activeProjects
+            .map(
+              (project) => `
+                <article class="about-mode-card">
+                  <p class="about-mode-card-title">${escapeHtml(project.title)}</p>
+                  <p class="about-mode-card-copy">${escapeHtml(project.aiSummary || project.shortDescription || "")}</p>
+                  <div class="about-mini-tags">
+                    ${(project.tools || []).slice(0, 3).map((tool) => `<span class="tag">${escapeHtml(tool)}</span>`).join("")}
+                  </div>
+                </article>
+              `
+            )
+            .join("")}
+        </div>
+      `
+      : '<p class="muted">Current build focus will be listed here.</p>';
+    return;
+  }
+
+  const toolCounts = codingProjects.reduce((accumulator, project) => {
+    (project.tools || []).forEach((tool) => {
+      accumulator[tool] = (accumulator[tool] || 0) + 1;
+    });
+    return accumulator;
+  }, {});
+
+  const topTools = Object.entries(toolCounts)
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 4);
+  const maxCount = Math.max(...topTools.map((item) => item[1]), 1);
+
+  els.aboutModePanel.innerHTML = `
+    <div class="about-skill-list">
+      ${topTools.length
+        ? topTools
+            .map(
+              ([tool, count]) => `
+                <div class="about-skill-row">
+                  <p class="about-skill-label">${escapeHtml(tool)}</p>
+                  <div class="about-skill-track">
+                    <span class="about-skill-fill" style="width: ${Math.round((count / maxCount) * 100)}%"></span>
+                  </div>
+                  <p class="about-skill-value">${escapeHtml(String(count))} projects</p>
+                </div>
+              `
+            )
+            .join("")
+        : '<p class="muted">Tool usage data appears once projects are loaded.</p>'}
+    </div>
+  `;
+}
+
+function initializeExplorerData() {
+  state.explorer.root = buildExplorerTree();
+  state.explorer.path = [EXPLORER_ROOT_ID];
+  state.explorer.history = [[EXPLORER_ROOT_ID]];
+  state.explorer.historyIndex = 0;
+  state.explorer.selectedEntryId = null;
+  state.explorer.contextEntryId = null;
+  state.explorer.dragEntryId = null;
+  state.explorer.renamingId = null;
+  state.explorer.renameDraft = "";
+  state.explorer.clipboard = null;
+  state.explorer.renameNeedsFocus = false;
+  state.explorer.search = "";
+  state.explorer.nextCustomId = 1;
+  if (els.explorerSearch) {
+    els.explorerSearch.value = "";
+  }
+  hideExplorerMenus();
+}
+
+function buildExplorerTree() {
+  const codingProjects = state.data?.codingProjects || [];
+  const profile = state.data?.profile || {};
+  const root = {
+    id: EXPLORER_ROOT_ID,
+    kind: "folder",
+    name: "My PC",
+    modified: EXPLORER_TIMESTAMP,
+    children: [
+      {
+        id: "program-files",
+        kind: "folder",
+        name: "Program Files",
+        modified: "2026-03-27 10:48 PM",
+        children: [
+          { id: "portfolio-core", kind: "folder", name: "Portfolio Core", modified: EXPLORER_TIMESTAMP, children: [] },
+          {
+            id: "development-tools",
+            kind: "folder",
+            name: "Development Tools",
+            modified: EXPLORER_TIMESTAMP,
+            children: []
+          },
+          { id: "productivity", kind: "folder", name: "Productivity", modified: EXPLORER_TIMESTAMP, children: [] },
+          { id: "game-demos", kind: "folder", name: "Game Demos", modified: EXPLORER_TIMESTAMP, children: [] }
+        ]
+      },
+      {
+        id: "users",
+        kind: "folder",
+        name: "Users",
+        modified: "2026-03-27 10:48 PM",
+        children: [
+          {
+            id: "jay-patel",
+            kind: "folder",
+            name: "Jay Patel",
+            modified: "2026-03-27 10:48 PM",
+            children: [
+              { id: "documents", kind: "folder", name: "Documents", modified: EXPLORER_TIMESTAMP, children: [] },
+              { id: "desktop-shortcuts", kind: "folder", name: "Desktop Shortcuts", modified: EXPLORER_TIMESTAMP, children: [] }
+            ]
+          }
+        ]
+      },
+      {
+        id: "projects-drive",
+        kind: "folder",
+        name: "Projects",
+        modified: EXPLORER_TIMESTAMP,
+        children: [
+          { id: "coding-projects", kind: "folder", name: "Coding Projects", modified: EXPLORER_TIMESTAMP, children: [] },
+          { id: "live-apps", kind: "folder", name: "Live Apps", modified: EXPLORER_TIMESTAMP, children: [] }
+        ]
+      },
+      {
+        id: "system",
+        kind: "folder",
+        name: "System",
+        modified: "2026-03-27 10:47 PM",
+        children: [
+          {
+            id: "session-json",
+            kind: "file",
+            name: "session.json",
+            modified: "2026-03-26 10:47 PM",
+            type: "JSON File",
+            size: "3 KB"
+          },
+          {
+            id: "robots-txt",
+            kind: "file",
+            name: "robots.txt",
+            modified: "2025-12-03 11:41 PM",
+            type: "Text Document",
+            size: "1 KB"
+          },
+          {
+            id: "rss-xml",
+            kind: "file",
+            name: "rss.xml",
+            modified: "2025-12-03 11:41 PM",
+            type: "XML File",
+            size: "7 KB"
+          },
+          {
+            id: "sitemap-xml",
+            kind: "file",
+            name: "sitemap.xml",
+            modified: "2025-12-03 11:41 PM",
+            type: "XML File",
+            size: "6 KB"
+          }
+        ]
+      },
+      {
+        id: "credits-md",
+        kind: "file",
+        name: "CREDITS.md",
+        modified: "2025-05-08 7:12 PM",
+        type: "Markdown File",
+        size: "6 KB",
+        action: { type: "open-window", windowId: "aboutWindow" }
+      },
+      {
+        id: "favicon-ico",
+        kind: "file",
+        name: "favicon.ico",
+        modified: "2023-11-18 4:40 PM",
+        type: "Picture File",
+        size: "4 KB"
+      },
+      {
+        id: "screenshot-png",
+        kind: "file",
+        name: "screenshot.png",
+        modified: "2024-12-08 12:22 PM",
+        type: "Picture File",
+        size: "296 KB"
+      }
+    ]
+  };
+
+  EXPLORER_APP_LIBRARY.forEach((app) => {
+    addExplorerEntryToFolderPath(root, app.folderPath, {
+      id: `app-${app.id}`,
+      kind: "file",
+      name: app.name,
+      modified: app.modified,
+      type: "Application",
+      size: app.size,
+      action: { ...app.action }
+    });
+  });
+
+  addExplorerEntryToFolderPath(root, ["users", "jay-patel", "documents"], {
+    id: "resume-pdf",
+    kind: "file",
+    name: "resume.pdf",
+    modified: "2026-03-20 2:20 PM",
+    type: "PDF File",
+    size: "248 KB",
+    action: {
+      type: "open-url",
+      url: profile.resumeUrl || "assets/documents/resume.pdf"
+    }
+  });
+
+  addExplorerEntryToFolderPath(root, ["users", "jay-patel", "documents"], {
+    id: "contact-vcf",
+    kind: "file",
+    name: "contact.vcf",
+    modified: "2026-03-20 2:35 PM",
+    type: "vCard File",
+    size: "1 KB",
+    action: { type: "open-window", windowId: "contactWindow" }
+  });
+
+  EXPLORER_APP_LIBRARY.forEach((app) => {
+    addExplorerEntryToFolderPath(root, ["users", "jay-patel", "desktop-shortcuts"], {
+      id: `shortcut-${app.id}`,
+      kind: "file",
+      name: `${app.name.replace(".exe", "")}.lnk`,
+      modified: EXPLORER_TIMESTAMP,
+      type: "Shortcut",
+      size: "1 KB",
+      action: { ...app.action }
+    });
+  });
+
+  codingProjects.forEach((project) => {
+    addExplorerEntryToFolderPath(root, ["projects-drive", "coding-projects"], {
+      id: `project-shortcut-${project.id}`,
+      kind: "file",
+      name: `${project.title}.url`,
+      modified: EXPLORER_TIMESTAMP,
+      type: "Internet Shortcut",
+      size: `${clamp(Math.round(project.title.length / 4), 2, 9)} KB`,
+      action: { type: "open-project", projectId: project.id }
+    });
+
+    if (project.githubUrl) {
+      addExplorerEntryToFolderPath(root, ["projects-drive", "coding-projects"], {
+        id: `project-repo-${project.id}`,
+        kind: "file",
+        name: `${project.title} Repo.url`,
+        modified: EXPLORER_TIMESTAMP,
+        type: "Internet Shortcut",
+        size: "3 KB",
+        action: { type: "open-url", url: project.githubUrl }
+      });
+    }
+
+    if (project.liveUrl && project.liveUrl !== "#") {
+      addExplorerEntryToFolderPath(root, ["projects-drive", "live-apps"], {
+        id: `project-live-${project.id}`,
+        kind: "file",
+        name: `${project.title} Live.url`,
+        modified: EXPLORER_TIMESTAMP,
+        type: "Internet Shortcut",
+        size: "2 KB",
+        action: { type: "open-url", url: project.liveUrl }
+      });
+    }
+  });
+
+  addExplorerEntryToFolderPath(root, ["projects-drive", "live-apps"], {
+    id: "finance-window-shortcut",
+    kind: "file",
+    name: "Finance Tracker.appref-ms",
+    modified: EXPLORER_TIMESTAMP,
+    type: "Application Reference",
+    size: "2 KB",
+    action: { type: "open-window", windowId: "financeWindow" }
+  });
+
+  return root;
+}
+
+function addExplorerEntryToFolderPath(root, folderPath, entry) {
+  let currentNode = root;
+  folderPath.forEach((folderId) => {
+    const nextNode = (currentNode.children || []).find((child) => child.id === folderId && child.kind === "folder");
+    if (nextNode) {
+      currentNode = nextNode;
+    }
+  });
+
+  currentNode.children = currentNode.children || [];
+  currentNode.children.push(entry);
+}
+
+function getExplorerRootNode() {
+  if (!state.explorer.root) {
+    initializeExplorerData();
+  }
+  return state.explorer.root;
+}
+
+function getExplorerNodeByPath(path) {
+  const safePath = Array.isArray(path) && path.length ? path : [EXPLORER_ROOT_ID];
+  const root = getExplorerRootNode();
+  if (!root || safePath[0] !== EXPLORER_ROOT_ID) {
+    return null;
+  }
+
+  let currentNode = root;
+  for (let index = 1; index < safePath.length; index += 1) {
+    const segment = safePath[index];
+    const nextNode = (currentNode.children || []).find((entry) => entry.id === segment && entry.kind === "folder");
+    if (!nextNode) {
+      return null;
+    }
+    currentNode = nextNode;
+  }
+
+  return currentNode;
+}
+
+function getExplorerBreadcrumbNodes(path) {
+  const safePath = Array.isArray(path) && path.length ? path : [EXPLORER_ROOT_ID];
+  const root = getExplorerRootNode();
+  if (!root) {
+    return [];
+  }
+
+  const crumbs = [root];
+  let currentNode = root;
+  for (let index = 1; index < safePath.length; index += 1) {
+    const segment = safePath[index];
+    const nextNode = (currentNode.children || []).find((entry) => entry.id === segment && entry.kind === "folder");
+    if (!nextNode) {
+      break;
+    }
+    crumbs.push(nextNode);
+    currentNode = nextNode;
+  }
+  return crumbs;
+}
+
+function findExplorerNodeInfoById(targetId, node = getExplorerRootNode(), parent = null, path = [EXPLORER_ROOT_ID]) {
+  if (!node) {
+    return null;
+  }
+
+  if (node.id === targetId) {
+    return { node, parent, path };
+  }
+
+  const children = node.children || [];
+  for (let index = 0; index < children.length; index += 1) {
+    const child = children[index];
+    const result = findExplorerNodeInfoById(targetId, child, node, [...path, child.id]);
+    if (result) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+function formatExplorerTimestamp(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  let hour = date.getHours();
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const period = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  return `${year}-${month}-${day} ${hour}:${minute} ${period}`;
+}
+
+function parseExplorerTimestampToNumber(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2}) (\d{1,2}):(\d{2}) (AM|PM)$/);
+  if (!match) {
+    return 0;
+  }
+
+  const [, year, month, day, rawHour, minute, period] = match;
+  let hour = Number(rawHour) % 12;
+  if (period === "PM") {
+    hour += 12;
+  }
+
+  return new Date(Number(year), Number(month) - 1, Number(day), hour, Number(minute), 0, 0).getTime();
+}
+
+function parseExplorerSizeToKb(value) {
+  if (!value) {
+    return 0;
+  }
+  const match = String(value).trim().match(/^([\d.]+)\s*(B|KB|MB|GB)$/i);
+  if (!match) {
+    return 0;
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2].toUpperCase();
+  if (Number.isNaN(amount)) {
+    return 0;
+  }
+
+  if (unit === "GB") {
+    return amount * 1024 * 1024;
+  }
+  if (unit === "MB") {
+    return amount * 1024;
+  }
+  if (unit === "B") {
+    return amount / 1024;
+  }
+  return amount;
+}
+
+function getFilteredExplorerEntries(node) {
+  const rawEntries = [...(node?.children || [])];
+  const searchTerm = state.explorer.search.trim().toLowerCase();
+  const sortBy = state.explorer.sortBy;
+  const sortDirection = state.explorer.sortDirection === "desc" ? -1 : 1;
+
+  const filtered = searchTerm
+    ? rawEntries.filter((entry) => {
+        const haystack = [entry.name, entry.type, entry.kind].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(searchTerm);
+      })
+    : rawEntries;
+
+  return filtered.sort((left, right) => {
+    if (left.kind !== right.kind) {
+      return left.kind === "folder" ? -1 : 1;
+    }
+
+    let comparison = 0;
+    if (sortBy === "size") {
+      comparison = parseExplorerSizeToKb(left.size) - parseExplorerSizeToKb(right.size);
+    } else if (sortBy === "type") {
+      const leftType = left.kind === "folder" ? "File folder" : left.type || "File";
+      const rightType = right.kind === "folder" ? "File folder" : right.type || "File";
+      comparison = leftType.localeCompare(rightType);
+    } else if (sortBy === "modified") {
+      comparison = parseExplorerTimestampToNumber(left.modified) - parseExplorerTimestampToNumber(right.modified);
+    } else {
+      comparison = left.name.localeCompare(right.name);
+    }
+
+    if (comparison === 0) {
+      comparison = left.name.localeCompare(right.name);
+    }
+
+    return comparison * sortDirection;
+  });
+}
+
+function applyExplorerSort(sortBy) {
+  if (!["name", "size", "type", "modified"].includes(sortBy)) {
+    return;
+  }
+
+  if (state.explorer.sortBy === sortBy) {
+    state.explorer.sortDirection = state.explorer.sortDirection === "asc" ? "desc" : "asc";
+  } else {
+    state.explorer.sortBy = sortBy;
+    state.explorer.sortDirection = "asc";
+  }
+
+  renderExplorer();
+}
+
+function hideExplorerSubmenus() {
+  if (els.explorerSortSubmenu) {
+    els.explorerSortSubmenu.hidden = true;
+  }
+  if (els.explorerNewSubmenu) {
+    els.explorerNewSubmenu.hidden = true;
+  }
+}
+
+function hideExplorerMenus() {
+  hideExplorerSubmenus();
+  if (els.explorerContextMenu) {
+    els.explorerContextMenu.hidden = true;
+  }
+  if (els.explorerItemContextMenu) {
+    els.explorerItemContextMenu.hidden = true;
+  }
+  if (els.explorerSortButton) {
+    els.explorerSortButton.setAttribute("aria-expanded", "false");
+  }
+}
+
+function positionExplorerMenu(menuElement, clientX, clientY) {
+  if (!menuElement) {
+    return;
+  }
+
+  const shell = document.querySelector("#myPcWindow .explorer-shell");
+  if (!shell) {
+    return;
+  }
+
+  const shellRect = shell.getBoundingClientRect();
+  const menuWidth = menuElement.offsetWidth || 230;
+  const menuHeight = menuElement.offsetHeight || 290;
+  const left = clamp(clientX - shellRect.left, 8, Math.max(8, shellRect.width - menuWidth - 8));
+  const top = clamp(clientY - shellRect.top, 8, Math.max(8, shellRect.height - menuHeight - 8));
+
+  menuElement.style.left = `${left}px`;
+  menuElement.style.top = `${top}px`;
+}
+
+function toggleExplorerSubmenu(name, forceOpen = false) {
+  const submenu = name === "sort" ? els.explorerSortSubmenu : name === "new" ? els.explorerNewSubmenu : null;
+  if (!submenu || !els.explorerContextMenu) {
+    return;
+  }
+
+  const trigger = els.explorerContextMenu.querySelector(`[data-explorer-submenu-toggle="${name}"]`);
+  if (!trigger) {
+    return;
+  }
+
+  const shouldOpen = forceOpen || submenu.hidden;
+  hideExplorerSubmenus();
+  if (!shouldOpen) {
+    return;
+  }
+
+  submenu.hidden = false;
+  submenu.style.left = `${els.explorerContextMenu.offsetWidth - 1}px`;
+  submenu.style.top = `${trigger.offsetTop}px`;
+}
+
+function openExplorerContextMenu(clientX, clientY, contextEntryId = null, submenu = "") {
+  if (!els.explorerContextMenu) {
+    return;
+  }
+
+  state.explorer.contextEntryId = contextEntryId;
+  hideExplorerMenus();
+  hideExplorerSubmenus();
+  els.explorerContextMenu.hidden = false;
+  els.explorerSortButton?.setAttribute("aria-expanded", "true");
+  positionExplorerMenu(els.explorerContextMenu, clientX, clientY);
+
+  if (submenu) {
+    toggleExplorerSubmenu(submenu, true);
+  }
+}
+
+function openExplorerItemContextMenu(clientX, clientY, contextEntryId) {
+  if (!els.explorerItemContextMenu || !contextEntryId) {
+    return;
+  }
+
+  state.explorer.contextEntryId = contextEntryId;
+  hideExplorerMenus();
+  els.explorerItemContextMenu.hidden = false;
+  positionExplorerMenu(els.explorerItemContextMenu, clientX, clientY);
+}
+
+function createExplorerCustomId(prefix) {
+  const id = `${prefix}-${Date.now().toString(36)}-${state.explorer.nextCustomId}`;
+  state.explorer.nextCustomId += 1;
+  return id;
+}
+
+function getUniqueExplorerName(folderNode, proposedName) {
+  const existing = new Set((folderNode.children || []).map((entry) => entry.name.toLowerCase()));
+  if (!existing.has(proposedName.toLowerCase())) {
+    return proposedName;
+  }
+
+  const extensionIndex = proposedName.lastIndexOf(".");
+  const hasExtension = extensionIndex > 0;
+  const stem = hasExtension ? proposedName.slice(0, extensionIndex) : proposedName;
+  const extension = hasExtension ? proposedName.slice(extensionIndex) : "";
+  let count = 2;
+  let candidate = `${stem} (${count})${extension}`;
+  while (existing.has(candidate.toLowerCase())) {
+    count += 1;
+    candidate = `${stem} (${count})${extension}`;
+  }
+  return candidate;
+}
+
+function createExplorerFolder(folderName = "New Folder") {
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  if (!currentNode || currentNode.kind !== "folder") {
+    return null;
+  }
+
+  const resolvedName = getUniqueExplorerName(currentNode, folderName);
+  const folder = {
+    id: createExplorerCustomId("folder"),
+    kind: "folder",
+    name: resolvedName,
+    modified: formatExplorerTimestamp(),
+    children: []
+  };
+
+  currentNode.children = currentNode.children || [];
+  currentNode.children.push(folder);
+  return folder;
+}
+
+function createExplorerTextFile(fileName = "New Text Document.txt") {
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  if (!currentNode || currentNode.kind !== "folder") {
+    return null;
+  }
+
+  const resolvedName = getUniqueExplorerName(currentNode, fileName);
+  const file = {
+    id: createExplorerCustomId("file"),
+    kind: "file",
+    name: resolvedName,
+    modified: formatExplorerTimestamp(),
+    type: "Text Document",
+    size: "1 KB"
+  };
+
+  currentNode.children = currentNode.children || [];
+  currentNode.children.push(file);
+  return file;
+}
+
+function cloneExplorerNode(node) {
+  const cloneIdPrefix = node.kind === "folder" ? "folder" : "file";
+  const clone = {
+    ...node,
+    id: createExplorerCustomId(cloneIdPrefix),
+    modified: formatExplorerTimestamp()
+  };
+
+  if (node.kind === "folder") {
+    clone.children = (node.children || []).map((child) => cloneExplorerNode(child));
+  }
+
+  if (node.action) {
+    clone.action = { ...node.action };
+  }
+
+  return clone;
+}
+
+function duplicateSelectedExplorerEntry() {
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  if (!currentNode || !state.explorer.selectedEntryId) {
+    return createExplorerTextFile("Pasted Item.txt");
+  }
+
+  const selected = (currentNode.children || []).find((entry) => entry.id === state.explorer.selectedEntryId);
+  if (!selected) {
+    return createExplorerTextFile("Pasted Item.txt");
+  }
+
+  const duplicate = cloneExplorerNode(selected);
+  duplicate.name = getUniqueExplorerName(currentNode, selected.name);
+  currentNode.children.push(duplicate);
+  return duplicate;
+}
+
+function getExplorerEntryFromCurrentFolder(entryId = null) {
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  if (!currentNode || currentNode.kind !== "folder") {
+    return null;
+  }
+
+  const resolvedEntryId = entryId || state.explorer.contextEntryId || state.explorer.selectedEntryId;
+  if (!resolvedEntryId) {
+    return null;
+  }
+
+  return (currentNode.children || []).find((entry) => entry.id === resolvedEntryId) || null;
+}
+
+function startExplorerRename(entryId) {
+  const targetEntry = getExplorerEntryFromCurrentFolder(entryId);
+  if (!targetEntry) {
+    return;
+  }
+
+  state.explorer.renamingId = targetEntry.id;
+  state.explorer.renameDraft = targetEntry.name;
+  state.explorer.renameNeedsFocus = true;
+  hideExplorerMenus();
+  renderExplorer();
+}
+
+function finishExplorerRename(commit = true) {
+  if (!state.explorer.renamingId) {
+    return false;
+  }
+
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  const renamingEntry = (currentNode?.children || []).find((entry) => entry.id === state.explorer.renamingId);
+  if (!renamingEntry) {
+    state.explorer.renamingId = null;
+    state.explorer.renameDraft = "";
+    state.explorer.renameNeedsFocus = false;
+    return false;
+  }
+
+  if (commit) {
+    const proposedName = state.explorer.renameDraft.trim();
+    if (proposedName) {
+      const siblingChildren = (currentNode.children || []).filter((entry) => entry.id !== renamingEntry.id);
+      const siblingNode = { children: siblingChildren };
+      renamingEntry.name = getUniqueExplorerName(siblingNode, proposedName);
+      renamingEntry.modified = formatExplorerTimestamp();
+    }
+  }
+
+  state.explorer.renamingId = null;
+  state.explorer.renameDraft = "";
+  state.explorer.renameNeedsFocus = false;
+  return true;
+}
+
+function setExplorerClipboard(mode, entryId = null) {
+  const targetEntry = getExplorerEntryFromCurrentFolder(entryId);
+  if (!targetEntry || !["copy", "cut"].includes(mode)) {
+    return false;
+  }
+
+  state.explorer.clipboard = { mode, entryId: targetEntry.id };
+  setExplorerStatusMessage(`${targetEntry.name} ${mode === "cut" ? "cut" : "copied"} to clipboard.`);
+  return true;
+}
+
+function pasteExplorerClipboard() {
+  const clipboard = state.explorer.clipboard;
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  if (!clipboard?.entryId || !currentNode || currentNode.kind !== "folder") {
+    return null;
+  }
+
+  const sourceInfo = findExplorerNodeInfoById(clipboard.entryId);
+  if (!sourceInfo || !sourceInfo.node || !sourceInfo.parent) {
+    state.explorer.clipboard = null;
+    return null;
+  }
+
+  if (clipboard.mode === "cut") {
+    const targetInfo = findExplorerNodeInfoById(currentNode.id);
+    if (!targetInfo || sourceInfo.parent.id === currentNode.id) {
+      return null;
+    }
+
+    if (sourceInfo.node.kind === "folder" && targetInfo.path.includes(sourceInfo.node.id)) {
+      return null;
+    }
+
+    sourceInfo.parent.children = (sourceInfo.parent.children || []).filter((entry) => entry.id !== sourceInfo.node.id);
+    sourceInfo.node.name = getUniqueExplorerName(currentNode, sourceInfo.node.name);
+    sourceInfo.node.modified = formatExplorerTimestamp();
+    currentNode.children = currentNode.children || [];
+    currentNode.children.push(sourceInfo.node);
+    state.explorer.clipboard = null;
+    return sourceInfo.node;
+  }
+
+  const duplicate = cloneExplorerNode(sourceInfo.node);
+  duplicate.name = getUniqueExplorerName(currentNode, sourceInfo.node.name);
+  currentNode.children = currentNode.children || [];
+  currentNode.children.push(duplicate);
+  return duplicate;
+}
+
+function moveExplorerEntryToFolder(entryId, targetFolderId) {
+  const entryInfo = findExplorerNodeInfoById(entryId);
+  const targetInfo = findExplorerNodeInfoById(targetFolderId);
+
+  if (!entryInfo || !entryInfo.parent || !targetInfo || targetInfo.node.kind !== "folder") {
+    return false;
+  }
+
+  if (entryInfo.parent.id === targetFolderId) {
+    return false;
+  }
+
+  if (entryInfo.node.kind === "folder" && targetInfo.path.includes(entryInfo.node.id)) {
+    return false;
+  }
+
+  entryInfo.parent.children = (entryInfo.parent.children || []).filter((entry) => entry.id !== entryId);
+  targetInfo.node.children = targetInfo.node.children || [];
+  targetInfo.node.children.push(entryInfo.node);
+  entryInfo.node.modified = formatExplorerTimestamp();
+  return true;
+}
+
+function setExplorerStatusMessage(message) {
+  if (!els.explorerPathLabel) {
+    return;
+  }
+
+  els.explorerPathLabel.textContent = message;
+  window.clearTimeout(setExplorerStatusMessage.timeoutId);
+  setExplorerStatusMessage.timeoutId = window.setTimeout(() => {
+    if (els.explorerPathLabel) {
+      const pathLabel = getExplorerBreadcrumbNodes(state.explorer.path).map((node) => node.name).join(" > ");
+      els.explorerPathLabel.textContent = pathLabel;
+    }
+  }, 2200);
+}
+
+function clearExplorerDropTargets() {
+  document.querySelectorAll(".explorer-row.is-drop-target").forEach((row) => {
+    row.classList.remove("is-drop-target");
+  });
+}
+
+function handleExplorerItemMenuAction(action) {
+  if (!action) {
+    return;
+  }
+
+  const targetEntry = getExplorerEntryFromCurrentFolder();
+  if (!targetEntry) {
+    return;
+  }
+
+  if (action === "open") {
+    openExplorerEntry(targetEntry.id);
+    return;
+  }
+
+  if (action === "open-new-window") {
+    openExplorerEntry(targetEntry.id);
+    setExplorerStatusMessage("Opened in new window mode (simulated).");
+    return;
+  }
+
+  if (action === "add-archive") {
+    setExplorerStatusMessage(`${targetEntry.name} added to archive queue.`);
+    return;
+  }
+
+  if (action === "download") {
+    setExplorerStatusMessage(`Downloading ${targetEntry.name}...`);
+    return;
+  }
+
+  if (action === "cut") {
+    setExplorerClipboard("cut", targetEntry.id);
+    return;
+  }
+
+  if (action === "copy") {
+    setExplorerClipboard("copy", targetEntry.id);
+    return;
+  }
+
+  if (action === "create-shortcut") {
+    const currentNode = getExplorerNodeByPath(state.explorer.path);
+    if (!currentNode || currentNode.kind !== "folder") {
+      return;
+    }
+
+    const baseName = targetEntry.name.replace(/\.[^/.]+$/, "");
+    const shortcutName = getUniqueExplorerName(currentNode, `${baseName}.lnk`);
+    const shortcut = {
+      id: createExplorerCustomId("file"),
+      kind: "file",
+      name: shortcutName,
+      modified: formatExplorerTimestamp(),
+      type: "Shortcut",
+      size: "1 KB",
+      action: targetEntry.action ? { ...targetEntry.action } : null
+    };
+
+    currentNode.children = currentNode.children || [];
+    currentNode.children.push(shortcut);
+    state.explorer.selectedEntryId = shortcut.id;
+    renderExplorer();
+    return;
+  }
+
+  if (action === "delete") {
+    const currentNode = getExplorerNodeByPath(state.explorer.path);
+    if (!currentNode || currentNode.kind !== "folder") {
+      return;
+    }
+
+    currentNode.children = (currentNode.children || []).filter((entry) => entry.id !== targetEntry.id);
+    if (state.explorer.selectedEntryId === targetEntry.id) {
+      state.explorer.selectedEntryId = null;
+    }
+    if (state.explorer.renamingId === targetEntry.id) {
+      finishExplorerRename(false);
+    }
+    setExplorerStatusMessage(`${targetEntry.name} moved to recycle bin (simulated).`);
+    renderExplorer();
+    return;
+  }
+
+  if (action === "rename") {
+    startExplorerRename(targetEntry.id);
+    return;
+  }
+
+  if (action === "properties") {
+    const typeLabel = targetEntry.kind === "folder" ? "File folder" : targetEntry.type || "File";
+    const sizeLabel = targetEntry.kind === "folder" ? "N/A" : targetEntry.size || "N/A";
+    setExplorerStatusMessage(`${targetEntry.name} | ${typeLabel} | ${sizeLabel}`);
+  }
+}
+
+function handleExplorerMenuAction(action) {
+  if (!action) {
+    return;
+  }
+
+  if (action === "refresh") {
+    renderExplorer();
+    return;
+  }
+
+  if (action === "add-file") {
+    const created = createExplorerTextFile("New File.txt");
+    if (created) {
+      state.explorer.selectedEntryId = created.id;
+      renderExplorer();
+    }
+    return;
+  }
+
+  if (action === "map-directory") {
+    const created = createExplorerFolder("Mapped Directory");
+    if (created) {
+      state.explorer.selectedEntryId = created.id;
+      renderExplorer();
+    }
+    return;
+  }
+
+  if (action === "open-terminal") {
+    openWindow("codingWindow");
+    setExplorerStatusMessage("Terminal simulation opened in VSCode.");
+    return;
+  }
+
+  if (action === "paste") {
+    const pasted = pasteExplorerClipboard();
+    if (pasted) {
+      state.explorer.selectedEntryId = pasted.id;
+      renderExplorer();
+    } else {
+      setExplorerStatusMessage("Nothing to paste.");
+    }
+    return;
+  }
+
+  if (action === "new-folder") {
+    const folder = createExplorerFolder("New Folder");
+    if (folder) {
+      state.explorer.selectedEntryId = folder.id;
+      startExplorerRename(folder.id);
+    }
+    return;
+  }
+
+  if (action === "new-text-file") {
+    const file = createExplorerTextFile("New Text Document.txt");
+    if (file) {
+      state.explorer.selectedEntryId = file.id;
+      startExplorerRename(file.id);
+    }
+    return;
+  }
+
+  if (action === "properties") {
+    const currentNode = getExplorerNodeByPath(state.explorer.path);
+    const selected = (currentNode?.children || []).find(
+      (entry) => entry.id === (state.explorer.contextEntryId || state.explorer.selectedEntryId)
+    );
+    if (selected) {
+      const typeLabel = selected.kind === "folder" ? "File folder" : selected.type || "File";
+      const sizeLabel = selected.kind === "folder" ? "N/A" : selected.size || "N/A";
+      setExplorerStatusMessage(`${selected.name} | ${typeLabel} | ${sizeLabel}`);
+    } else {
+      setExplorerStatusMessage("My PC | Virtual file explorer");
+    }
+  }
+}
+
+function bindExplorerControls() {
+  if (!els.explorerRows) {
+    return;
+  }
+
+  els.explorerBackButton?.addEventListener("click", () => {
+    if (state.explorer.historyIndex <= 0) {
+      return;
+    }
+
+    state.explorer.historyIndex -= 1;
+    state.explorer.path = [...state.explorer.history[state.explorer.historyIndex]];
+    state.explorer.selectedEntryId = null;
+    state.explorer.contextEntryId = null;
+    hideExplorerMenus();
+    renderExplorer();
+  });
+
+  els.explorerUpButton?.addEventListener("click", () => {
+    if (state.explorer.path.length <= 1) {
+      return;
+    }
+    navigateExplorerTo(state.explorer.path.slice(0, -1));
+  });
+
+  els.explorerRefreshButton?.addEventListener("click", () => {
+    state.explorer.selectedEntryId = null;
+    state.explorer.contextEntryId = null;
+    hideExplorerMenus();
+    renderExplorer();
+  });
+
+  els.explorerSortButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const rect = els.explorerSortButton.getBoundingClientRect();
+    openExplorerContextMenu(rect.left, rect.bottom + 4, null, "sort");
+  });
+
+  document.querySelectorAll(".explorer-table-header [data-explorer-sort]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const sortBy = button.getAttribute("data-explorer-sort");
+      applyExplorerSort(sortBy);
+      hideExplorerMenus();
+    });
+  });
+
+  els.explorerSearch?.addEventListener("input", (event) => {
+    state.explorer.search = event.target.value || "";
+    renderExplorer();
+  });
+
+  els.explorerBreadcrumb?.addEventListener("click", (event) => {
+    const crumb = event.target.closest("[data-explorer-crumb-index]");
+    if (!crumb) {
+      return;
+    }
+
+    event.stopPropagation();
+    const crumbIndex = Number(crumb.getAttribute("data-explorer-crumb-index"));
+    if (Number.isNaN(crumbIndex)) {
+      return;
+    }
+
+    navigateExplorerTo(state.explorer.path.slice(0, crumbIndex + 1));
+  });
+
+  els.explorerRows.addEventListener("click", (event) => {
+    if (event.target.closest(".explorer-rename-input")) {
+      return;
+    }
+
+    const row = event.target.closest(".explorer-row");
+    hideExplorerMenus();
+
+    if (!row) {
+      if (state.explorer.renamingId) {
+        finishExplorerRename(true);
+      }
+      state.explorer.selectedEntryId = null;
+      state.explorer.contextEntryId = null;
+      renderExplorer();
+      return;
+    }
+
+    const entryId = row.getAttribute("data-entry-id");
+    if (!entryId) {
+      return;
+    }
+
+    if (state.explorer.renamingId && state.explorer.renamingId !== entryId) {
+      finishExplorerRename(true);
+    }
+
+    state.explorer.selectedEntryId = entryId;
+    state.explorer.contextEntryId = entryId;
+    renderExplorer();
+  });
+
+  els.explorerRows.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const row = event.target.closest(".explorer-row");
+    if (row) {
+      const entryId = row.getAttribute("data-entry-id");
+      if (!entryId) {
+        return;
+      }
+      if (state.explorer.renamingId && state.explorer.renamingId !== entryId) {
+        finishExplorerRename(true);
+      }
+      state.explorer.selectedEntryId = entryId;
+      state.explorer.contextEntryId = entryId;
+      renderExplorer();
+      openExplorerItemContextMenu(event.clientX, event.clientY, entryId);
+      return;
+    }
+
+    if (state.explorer.renamingId) {
+      finishExplorerRename(true);
+    }
+    state.explorer.selectedEntryId = null;
+    state.explorer.contextEntryId = null;
+    renderExplorer();
+    openExplorerContextMenu(event.clientX, event.clientY, null);
+  });
+
+  els.explorerRows.addEventListener("dblclick", (event) => {
+    if (event.target.closest(".explorer-rename-input")) {
+      return;
+    }
+
+    const row = event.target.closest(".explorer-row");
+    if (!row) {
+      return;
+    }
+
+    const entryId = row.getAttribute("data-entry-id");
+    if (!entryId || state.explorer.renamingId === entryId) {
+      return;
+    }
+
+    openExplorerEntry(entryId);
+  });
+
+  els.explorerRows.addEventListener("keydown", (event) => {
+    if (event.target.closest(".explorer-rename-input")) {
+      return;
+    }
+
+    const row = event.target.closest(".explorer-row");
+    if (!row) {
+      return;
+    }
+
+    const entryId = row.getAttribute("data-entry-id");
+    if (!entryId) {
+      return;
+    }
+
+    if (event.key === "F2") {
+      event.preventDefault();
+      startExplorerRename(entryId);
+      return;
+    }
+
+    if (event.key !== "Enter" || state.explorer.renamingId === entryId) {
+      return;
+    }
+
+    event.preventDefault();
+    openExplorerEntry(entryId);
+  });
+
+  els.explorerRows.addEventListener("dragstart", (event) => {
+    if (event.target.closest(".explorer-rename-input")) {
+      event.preventDefault();
+      return;
+    }
+
+    const row = event.target.closest(".explorer-row");
+    if (!row) {
+      return;
+    }
+
+    const entryId = row.getAttribute("data-entry-id");
+    if (!entryId) {
+      return;
+    }
+
+    if (state.explorer.renamingId === entryId) {
+      event.preventDefault();
+      return;
+    }
+
+    state.explorer.dragEntryId = entryId;
+    event.dataTransfer?.setData("text/plain", entryId);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+    }
+  });
+
+  els.explorerRows.addEventListener("dragover", (event) => {
+    const row = event.target.closest(".explorer-row");
+    if (!row || row.getAttribute("data-entry-kind") !== "folder") {
+      return;
+    }
+
+    if (!state.explorer.dragEntryId || state.explorer.dragEntryId === row.getAttribute("data-entry-id")) {
+      return;
+    }
+
+    event.preventDefault();
+    clearExplorerDropTargets();
+    row.classList.add("is-drop-target");
+  });
+
+  els.explorerRows.addEventListener("dragleave", (event) => {
+    const row = event.target.closest(".explorer-row");
+    if (row) {
+      row.classList.remove("is-drop-target");
+    }
+  });
+
+  els.explorerRows.addEventListener("drop", (event) => {
+    const row = event.target.closest(".explorer-row");
+    clearExplorerDropTargets();
+    if (!row || row.getAttribute("data-entry-kind") !== "folder" || !state.explorer.dragEntryId) {
+      return;
+    }
+
+    event.preventDefault();
+    const moved = moveExplorerEntryToFolder(state.explorer.dragEntryId, row.getAttribute("data-entry-id"));
+    if (moved) {
+      state.explorer.selectedEntryId = state.explorer.dragEntryId;
+      renderExplorer();
+    }
+  });
+
+  els.explorerRows.addEventListener("dragend", () => {
+    state.explorer.dragEntryId = null;
+    clearExplorerDropTargets();
+  });
+
+  els.explorerRows.addEventListener("input", (event) => {
+    const renameInput = event.target.closest("[data-explorer-rename-input]");
+    if (!renameInput) {
+      return;
+    }
+    state.explorer.renameDraft = renameInput.value;
+  });
+
+  els.explorerRows.addEventListener("keydown", (event) => {
+    const renameInput = event.target.closest("[data-explorer-rename-input]");
+    if (!renameInput) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      finishExplorerRename(true);
+      renderExplorer();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      finishExplorerRename(false);
+      renderExplorer();
+    }
+  });
+
+  els.explorerRows.addEventListener("focusout", (event) => {
+    const renameInput = event.target.closest("[data-explorer-rename-input]");
+    if (!renameInput) {
+      return;
+    }
+
+    if (!state.explorer.renamingId) {
+      return;
+    }
+
+    finishExplorerRename(true);
+    renderExplorer();
+  });
+
+  els.explorerContextMenu?.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    const toggleButton = event.target.closest("[data-explorer-submenu-toggle]");
+    if (toggleButton) {
+      const submenu = toggleButton.getAttribute("data-explorer-submenu-toggle");
+      toggleExplorerSubmenu(submenu);
+      return;
+    }
+
+    const sortButton = event.target.closest("[data-explorer-sort]");
+    if (sortButton) {
+      applyExplorerSort(sortButton.getAttribute("data-explorer-sort"));
+      hideExplorerMenus();
+      return;
+    }
+
+    const actionButton = event.target.closest("[data-explorer-action]");
+    if (!actionButton) {
+      return;
+    }
+
+    if (actionButton.getAttribute("aria-disabled") === "true") {
+      return;
+    }
+
+    handleExplorerMenuAction(actionButton.getAttribute("data-explorer-action"));
+    hideExplorerMenus();
+  });
+
+  els.explorerContextMenu?.addEventListener("mouseover", (event) => {
+    const toggleButton = event.target.closest("[data-explorer-submenu-toggle]");
+    if (toggleButton) {
+      toggleExplorerSubmenu(toggleButton.getAttribute("data-explorer-submenu-toggle"), true);
+    }
+  });
+
+  els.explorerContextMenu?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+
+  els.explorerItemContextMenu?.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    const actionButton = event.target.closest("[data-explorer-item-action]");
+    if (!actionButton) {
+      return;
+    }
+
+    handleExplorerItemMenuAction(actionButton.getAttribute("data-explorer-item-action"));
+    hideExplorerMenus();
+  });
+
+  els.explorerItemContextMenu?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+}
+
+function navigateExplorerTo(path, pushHistory = true) {
+  const normalizedPath = Array.isArray(path) && path.length ? path : [EXPLORER_ROOT_ID];
+  if (normalizedPath[0] !== EXPLORER_ROOT_ID) {
+    return;
+  }
+
+  const node = getExplorerNodeByPath(normalizedPath);
+  if (!node) {
+    return;
+  }
+
+  state.explorer.path = [...normalizedPath];
+  state.explorer.selectedEntryId = null;
+  state.explorer.contextEntryId = null;
+  state.explorer.renamingId = null;
+  state.explorer.renameDraft = "";
+  state.explorer.renameNeedsFocus = false;
+  hideExplorerMenus();
+
+  if (pushHistory) {
+    const history = state.explorer.history.slice(0, state.explorer.historyIndex + 1);
+    history.push([...normalizedPath]);
+    state.explorer.history = history;
+    state.explorer.historyIndex = history.length - 1;
+  }
+
+  renderExplorer();
+}
+
+function openExplorerEntry(entryId) {
+  const currentNode = getExplorerNodeByPath(state.explorer.path);
+  const entry = (currentNode?.children || []).find((item) => item.id === entryId);
+  if (!entry) {
+    return;
+  }
+
+  if (entry.kind === "folder") {
+    navigateExplorerTo([...state.explorer.path, entry.id]);
+    return;
+  }
+
+  const action = entry.action;
+  if (!action) {
+    return;
+  }
+
+  if (action.type === "open-window") {
+    if (action.workspace) {
+      state.codingWorkspace = action.workspace;
+      updateCodingWorkspace();
+    }
+    openWindow(action.windowId);
+    return;
+  }
+
+  if (action.type === "open-project") {
+    const project = findProjectById(action.projectId);
+    if (project) {
+      showProjectDetails(project, true, "overview");
+    }
+    return;
+  }
+
+  if (action.type === "open-url" && action.url) {
+    window.open(action.url, "_blank", "noopener,noreferrer");
+  }
+}
+
+function renderExplorer() {
+  if (!els.explorerRows || !els.explorerBreadcrumb) {
+    return;
+  }
+
+  const currentNode = getExplorerNodeByPath(state.explorer.path) || getExplorerNodeByPath([EXPLORER_ROOT_ID]);
+  if (!currentNode) {
+    return;
+  }
+
+  if (!getExplorerNodeByPath(state.explorer.path)) {
+    state.explorer.path = [EXPLORER_ROOT_ID];
+  }
+
+  const breadcrumbNodes = getExplorerBreadcrumbNodes(state.explorer.path);
+  els.explorerBreadcrumb.innerHTML = breadcrumbNodes
+    .map(
+      (node, index) => `
+        <button class="explorer-crumb" type="button" data-explorer-crumb-index="${index}">
+          ${escapeHtml(node.name)}
+        </button>
+        ${index < breadcrumbNodes.length - 1 ? '<span class="explorer-crumb-sep">&#8250;</span>' : ""}
+      `
+    )
+    .join("");
+
+  const entries = getFilteredExplorerEntries(currentNode);
+  const selectedEntryVisible = entries.some((entry) => entry.id === state.explorer.selectedEntryId);
+  if (!selectedEntryVisible) {
+    state.explorer.selectedEntryId = null;
+  }
+  const renamingEntryVisible = entries.some((entry) => entry.id === state.explorer.renamingId);
+  if (!renamingEntryVisible) {
+    state.explorer.renamingId = null;
+    state.explorer.renameDraft = "";
+    state.explorer.renameNeedsFocus = false;
+  }
+
+  els.explorerRows.innerHTML = entries.length
+    ? entries
+        .map((entry) => {
+          const isSelected = entry.id === state.explorer.selectedEntryId;
+          const isRenaming = entry.id === state.explorer.renamingId;
+          const typeLabel = entry.kind === "folder" ? "File folder" : entry.type || "File";
+          const sizeLabel = entry.kind === "folder" ? "" : entry.size || "";
+          const renameValue = isRenaming ? state.explorer.renameDraft || entry.name : "";
+          return `
+            <div
+              class="explorer-row${isSelected ? " is-selected" : ""}"
+              tabindex="0"
+              role="row"
+              draggable="${isRenaming ? "false" : "true"}"
+              data-entry-id="${escapeHtml(entry.id)}"
+              data-entry-kind="${escapeHtml(entry.kind)}"
+            >
+              <span class="explorer-row-name">
+                <span class="explorer-entry-icon ${entry.kind === "folder" ? "is-folder" : "is-file"}" aria-hidden="true"></span>
+                ${
+                  isRenaming
+                    ? `<input class="explorer-rename-input" type="text" value="${escapeHtml(renameValue)}" data-explorer-rename-input="${escapeHtml(entry.id)}" aria-label="Rename ${escapeHtml(entry.name)}" />`
+                    : `<span class="explorer-entry-text">${escapeHtml(entry.name)}</span>`
+                }
+              </span>
+              <span class="explorer-row-date">${escapeHtml(entry.modified || EXPLORER_TIMESTAMP)}</span>
+              <span class="explorer-row-type">${escapeHtml(typeLabel)}</span>
+              <span class="explorer-row-size">${escapeHtml(sizeLabel)}</span>
+            </div>
+          `;
+        })
+        .join("")
+    : '<p class="explorer-empty">No files match your search.</p>';
+
+  if (state.explorer.renamingId && state.explorer.renameNeedsFocus) {
+    const renameInput = Array.from(els.explorerRows.querySelectorAll("[data-explorer-rename-input]")).find(
+      (input) => input.getAttribute("data-explorer-rename-input") === state.explorer.renamingId
+    );
+    if (renameInput) {
+      renameInput.focus();
+      renameInput.select();
+    }
+    state.explorer.renameNeedsFocus = false;
+  }
+
+  if (els.explorerItemCount) {
+    els.explorerItemCount.textContent = `${entries.length} item${entries.length === 1 ? "" : "s"}`;
+  }
+  if (els.explorerPathLabel) {
+    els.explorerPathLabel.textContent = breadcrumbNodes.map((node) => node.name).join(" > ");
+  }
+
+  if (els.explorerBackButton) {
+    els.explorerBackButton.disabled = state.explorer.historyIndex <= 0;
+  }
+  if (els.explorerUpButton) {
+    els.explorerUpButton.disabled = state.explorer.path.length <= 1;
+  }
+
+  if (els.explorerSortButton) {
+    const sortLabelMap = {
+      name: "Name",
+      size: "Size",
+      type: "Item type",
+      modified: "Date modified"
+    };
+    const directionMarker = state.explorer.sortDirection === "desc" ? " (Desc)" : "";
+    els.explorerSortButton.textContent = `Sort by: ${sortLabelMap[state.explorer.sortBy]}${directionMarker}`;
+  }
+
+  document.querySelectorAll(".explorer-col-button[data-explorer-sort]").forEach((button) => {
+    button.classList.toggle("is-active", button.getAttribute("data-explorer-sort") === state.explorer.sortBy);
+  });
+
+  els.explorerContextMenu?.querySelectorAll("[data-explorer-sort]").forEach((button) => {
+    button.classList.toggle("is-active", button.getAttribute("data-explorer-sort") === state.explorer.sortBy);
+  });
+
+  const clipboardEntryId = state.explorer.clipboard?.entryId;
+  const clipboardExists = Boolean(clipboardEntryId && findExplorerNodeInfoById(clipboardEntryId));
+  if (!clipboardExists) {
+    state.explorer.clipboard = null;
+  }
+  const pasteButton = els.explorerContextMenu?.querySelector("[data-explorer-action=\"paste\"]");
+  if (pasteButton) {
+    pasteButton.setAttribute("aria-disabled", String(!clipboardExists));
+    pasteButton.classList.toggle("is-disabled", !clipboardExists);
+  }
 }
 
 function bindWallpaperPicker() {
@@ -729,6 +2489,10 @@ function openWindow(windowId) {
     initializeWindowPosition(windowEl);
   }
 
+  if (windowId === "myPcWindow") {
+    renderExplorer();
+  }
+
   if (wasHidden) {
     windowEl.classList.remove("is-opening");
     window.requestAnimationFrame(() => {
@@ -917,7 +2681,7 @@ function hydrateProfile() {
     `Location: ${profile.location}`,
     `Coding projects: ${state.data.codingProjects.length}`,
     `CAD projects: ${state.data.solidworksProjects.length}`,
-    "Theme: Portfolio_OS_Theme Windows desktop"
+    "Theme: Windows desktop-inspired portfolio OS"
   ];
 
   els.profileQuickFacts.innerHTML = quickFacts.map((fact) => `<li>${escapeHtml(fact)}</li>`).join("");
@@ -930,6 +2694,9 @@ function hydrateProfile() {
   els.linkedinLink.href = profile.linkedin || "#";
   els.linkedinSocialLink.href = profile.linkedin || "#";
   els.startLinkedinLink.href = profile.linkedin || "#";
+  if (els.contactSideLinkedinLink) {
+    els.contactSideLinkedinLink.href = profile.linkedin || "#";
+  }
 
   els.resumeLink.href = profile.resumeUrl || "#";
 
@@ -937,6 +2704,18 @@ function hydrateProfile() {
   els.emailLink.textContent = profile.email;
   els.emailSocialLink.href = mailtoHref;
   els.startEmailLink.href = mailtoHref;
+  if (els.aboutEmailLink) {
+    els.aboutEmailLink.href = mailtoHref;
+  }
+  if (els.aboutLinkedinLink) {
+    els.aboutLinkedinLink.href = profile.linkedin || "#";
+  }
+  if (els.aboutGithubLink) {
+    els.aboutGithubLink.href = profile.github || "#";
+  }
+  if (els.contactSideGithubLink) {
+    els.contactSideGithubLink.href = profile.github || "#";
+  }
   if (els.copyEmailButton) {
     els.copyEmailButton.dataset.email = profile.email;
   }
@@ -961,8 +2740,8 @@ function populateAboutHighlights() {
       <p class="insight-value">${escapeHtml(topTools.join(", ") || "Custom stack")}</p>
     </article>
     <article class="insight-card">
-      <p class="insight-label">Dual Track</p>
-      <p class="insight-value">Software + Mechanical</p>
+      <p class="insight-label">Current Focus</p>
+      <p class="insight-value">Software + Machine Learning</p>
     </article>
   `;
 }
@@ -1533,6 +3312,9 @@ function renderDataError() {
     "The Portfolio_OS_Theme shell is active, but the portfolio content file could not be loaded right now.";
   els.profileQuickFacts.innerHTML = "<li>Check data/projects.json for formatting or fetch issues.</li>";
   els.aboutHighlights.innerHTML = "";
+  if (els.aboutModePanel) {
+    els.aboutModePanel.innerHTML = message;
+  }
   els.codingProjectsGrid.innerHTML = message;
   els.codingListView.innerHTML = message;
   els.codingPreviewPanel.innerHTML = message;

@@ -6,7 +6,7 @@
     "location": "Toronto, ON",
     "email": "jay.patell.2131@gmail.com",
     "github": "https://github.com/penguinme12345",
-    "linkedin": "https://www.linkedin.com/in/jay-patel-b55737319/",
+    "linkedin": "https://www.linkedin.com/in/JayPatel190",
     "resumeUrl": "assets/documents/resume.pdf"
   },
   "codingProjects": [
@@ -57,6 +57,30 @@
       "externalUrl": "",
       "aiSummary": "A reproducible civilization simulation platform combining deterministic worldgen, agent behavior dynamics, and visual plus headless experimentation workflows.",
       "relatedProjects": ["code-lol-tracker"]
+    },
+    {
+      "id": "code-finance-tracker",
+      "slug": "personal-finance-tracker",
+      "title": "Personal Finance Tracker",
+      "category": "Coding",
+      "featured": true,
+      "shortDescription": "A local-first finance dashboard for tracking income, expenses, budgets, and monthly cashflow trends.",
+      "fullDescription": "Built a standalone personal finance web app with transaction management, monthly filtering, category budgeting, trend visualization, and CSV/JSON export while keeping all data local in the browser.",
+      "problem": "People need a quick way to monitor spending and budget performance without complex setup or cloud dependencies.",
+      "solution": "Designed a zero-backend, browser-based tracker with clean UX, persistent local storage, and useful monthly insights that run entirely on the client.",
+      "role": "Solo developer (product design, frontend architecture, data modeling)",
+      "tools": ["JavaScript", "HTML", "CSS", "LocalStorage"],
+      "technologies": ["Vanilla JavaScript", "CSS Grid", "Web Storage API", "CSV/JSON Export"],
+      "tags": ["finance", "productivity", "dashboard", "web-app"],
+      "year": 2026,
+      "status": "Active",
+      "thumbnail": "",
+      "gallery": [],
+      "githubUrl": "https://github.com/penguinme12345/Personal-Finance-Tracker",
+      "liveUrl": "/apps/personal-finance-tracker/index.html",
+      "externalUrl": "",
+      "aiSummary": "A local-first finance tracking app that combines budgeting, transaction analytics, and exportable records in a single lightweight experience.",
+      "relatedProjects": ["code-lol-tracker", "code-civsim"]
     }
   ],
   "solidworksProjects": []

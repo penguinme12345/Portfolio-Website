@@ -31,6 +31,11 @@
 
     <main class="desktop-shell" id="desktopShell" aria-label="Portfolio desktop">
       <section class="desktop-icons" id="desktop-icons" aria-label="Desktop shortcuts">
+        <button class="desktop-icon" type="button" data-open-window="myPcWindow" aria-label="Open My PC">
+          <img class="desktop-icon-image" src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">My PC</span>
+        </button>
+
         <button class="desktop-icon" type="button" data-open-window="aboutWindow" aria-label="Open About Me">
           <img class="desktop-icon-image" src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
           <span class="desktop-icon-label">About Me</span>
@@ -48,7 +53,7 @@
           data-open-coding-workspace="lol-demo"
           aria-label="Open LoL Demo"
         >
-          <img class="desktop-icon-image" src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+          <img class="desktop-icon-image" src="assets/images/apps/leagueOfLegends.svg" alt="" aria-hidden="true" />
           <span class="desktop-icon-label">LoL Demo</span>
         </button>
 
@@ -84,7 +89,7 @@
       </section>
 
       <section
-        class="window window-compact"
+        class="window window-medium"
         id="aboutWindow"
         data-window-title="About Me"
         data-x="250"
@@ -103,13 +108,155 @@
           </div>
         </div>
         <div class="window-content">
-          <p class="window-lead" id="aboutSummary"></p>
-          <p class="detail-copy">
-            This portfolio now uses the original Portfolio_OS_Theme Windows visual language, including the same desktop
-            wallpaper system, taskbar feel, lock screen image, and app icon set.
-          </p>
-          <div class="insight-grid" id="aboutHighlights"></div>
-          <ul class="about-list" id="profileQuickFacts"></ul>
+          <div class="about-shell">
+            <section class="about-hero">
+              <p class="window-lead" id="aboutSummary"></p>
+              <p class="detail-copy">
+                Building polished software products with a focus on machine learning, simulation systems, and practical
+                user experiences.
+              </p>
+              <div class="about-quick-links">
+                <a class="external-link" id="aboutEmailLink" href="mailto:jay.patell.2131@gmail.com">Email</a>
+                <a
+                  class="external-link"
+                  id="aboutLinkedinLink"
+                  href="https://www.linkedin.com/in/JayPatel190"
+                  target="_blank"
+                  rel="noreferrer"
+                >LinkedIn</a>
+                <a class="external-link" id="aboutGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">GitHub</a>
+              </div>
+            </section>
+
+            <div class="about-mode-toggle" role="group" aria-label="About me views">
+              <button class="about-mode-button is-active" type="button" data-about-mode="overview">Overview</button>
+              <button class="about-mode-button" type="button" data-about-mode="journey">Journey</button>
+              <button class="about-mode-button" type="button" data-about-mode="now">Now Building</button>
+            </div>
+
+            <section class="about-mode-panel" id="aboutModePanel" aria-live="polite"></section>
+
+            <div class="insight-grid" id="aboutHighlights"></div>
+            <ul class="about-list" id="profileQuickFacts"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="window window-wide window-explorer"
+        id="myPcWindow"
+        data-window-title="My PC"
+        data-x="380"
+        data-y="86"
+        aria-labelledby="myPcTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+            <h2 id="myPcTitle">My PC</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="myPcWindow" aria-label="Minimize My PC">_</button>
+            <button class="window-control close-window" type="button" data-close-window="myPcWindow" aria-label="Close My PC">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <div class="explorer-shell">
+            <div class="explorer-toolbar">
+              <div class="explorer-nav-buttons">
+                <button class="explorer-nav-btn" id="explorerBackButton" type="button" aria-label="Go back">&#8592;</button>
+                <button class="explorer-nav-btn" id="explorerUpButton" type="button" aria-label="Go up">&#8593;</button>
+              </div>
+              <div class="explorer-address-bar" id="explorerBreadcrumb" aria-label="Current location"></div>
+              <button class="explorer-nav-btn" id="explorerRefreshButton" type="button" aria-label="Refresh">&#10227;</button>
+              <button class="explorer-sort-btn" id="explorerSortButton" type="button" aria-haspopup="menu" aria-expanded="false">Sort by</button>
+              <label class="sr-only" for="explorerSearch">Search My PC</label>
+              <input id="explorerSearch" class="explorer-search" type="search" placeholder="Search" />
+            </div>
+
+            <div class="explorer-table-header" role="row">
+              <button class="explorer-col-name explorer-col-button" type="button" data-explorer-sort="name">Name</button>
+              <button class="explorer-col-date explorer-col-button" type="button" data-explorer-sort="modified">Date modified</button>
+              <button class="explorer-col-type explorer-col-button" type="button" data-explorer-sort="type">Type</button>
+              <button class="explorer-col-size explorer-col-button" type="button" data-explorer-sort="size">Size</button>
+            </div>
+
+            <div class="explorer-table-body" id="explorerRows" role="grid" aria-label="My PC files"></div>
+
+            <aside class="explorer-context-menu" id="explorerContextMenu" hidden aria-label="Explorer menu">
+              <button class="explorer-context-item" type="button" data-explorer-submenu-toggle="sort">
+                <span>Sort by</span>
+                <span class="explorer-menu-arrow">&#8250;</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-action="refresh">Refresh</button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-action="add-file">Add file(s)</button>
+              <button class="explorer-context-item" type="button" data-explorer-action="map-directory">Map directory</button>
+              <button class="explorer-context-item" type="button" data-explorer-action="open-terminal">Open Terminal here</button>
+              <button class="explorer-context-item" type="button" data-explorer-action="paste">Paste</button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-submenu-toggle="new">
+                <span>New</span>
+                <span class="explorer-menu-arrow">&#8250;</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-action="properties">Properties</button>
+
+              <div class="explorer-context-submenu" id="explorerSortSubmenu" hidden>
+                <button class="explorer-context-item" type="button" data-explorer-sort="name">Name</button>
+                <button class="explorer-context-item" type="button" data-explorer-sort="size">Size</button>
+                <button class="explorer-context-item" type="button" data-explorer-sort="type">Item type</button>
+                <button class="explorer-context-item" type="button" data-explorer-sort="modified">Date modified</button>
+              </div>
+
+              <div class="explorer-context-submenu" id="explorerNewSubmenu" hidden>
+                <button class="explorer-context-item" type="button" data-explorer-action="new-folder">Folder</button>
+                <button class="explorer-context-item" type="button" data-explorer-action="new-text-file">Text Document</button>
+              </div>
+            </aside>
+
+            <aside class="explorer-context-menu" id="explorerItemContextMenu" hidden aria-label="Explorer item menu">
+              <button class="explorer-context-item" type="button" data-explorer-item-action="open">
+                <span>Open</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="open-new-window">
+                <span>Open in new window</span>
+              </button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="add-archive">
+                <span>Add to archive...</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="download">
+                <span>Download</span>
+              </button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="cut">
+                <span>Cut</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="copy">
+                <span>Copy</span>
+              </button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="create-shortcut">
+                <span>Create shortcut</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="delete">
+                <span>Delete</span>
+              </button>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="rename">
+                <span>Rename</span>
+              </button>
+              <div class="explorer-menu-divider"></div>
+              <button class="explorer-context-item" type="button" data-explorer-item-action="properties">
+                <span>Properties</span>
+              </button>
+            </aside>
+
+            <div class="explorer-statusbar">
+              <span id="explorerItemCount">0 items</span>
+              <span id="explorerPathLabel">My PC</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -457,7 +604,7 @@
             <p class="window-lead">Reach out directly or open the portfolio documents below.</p>
             <ul class="contact-list">
               <li>Email: <a id="emailLink" href="mailto:jay.patell.2131@gmail.com">jay.patell.2131@gmail.com</a></li>
-              <li>LinkedIn: <a id="linkedinLink" href="https://www.linkedin.com/in/jay-patel-b55737319/" target="_blank" rel="noreferrer">Profile</a></li>
+              <li>LinkedIn: <a id="linkedinLink" href="https://www.linkedin.com/in/JayPatel190" target="_blank" rel="noreferrer">Profile</a></li>
               <li>GitHub: <a id="contactGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">Repositories</a></li>
               <li>Resume: <a id="resumeLink" href="assets/documents/resume.pdf" target="_blank" rel="noreferrer">Open document</a></li>
             </ul>
@@ -469,7 +616,7 @@
               <a class="social-link" id="emailSocialLink" href="mailto:jay.patell.2131@gmail.com" aria-label="Send email">
                 <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
               </a>
-              <a class="social-link" id="linkedinSocialLink" href="https://www.linkedin.com/in/jay-patel-b55737319/" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
+              <a class="social-link" id="linkedinSocialLink" href="https://www.linkedin.com/in/JayPatel190" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
                 <img src="assets/images/social/linkedin.svg" alt="" aria-hidden="true" />
               </a>
               <a class="social-link" id="githubSocialLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer" aria-label="Open GitHub">
@@ -479,7 +626,16 @@
           </div>
           <div class="contact-sidecard">
             <img class="contact-avatar" src="assets/images/baseImages/default_avatar.svg" alt="" aria-hidden="true" />
-            <img class="contact-scan" src="assets/images/baseImages/scanCode.png" alt="Scan code decoration" />
+            <p class="contact-sidecard-name">Jay Patel</p>
+            <p class="contact-sidecard-role">Software Developer and Machine Learning Builder</p>
+            <div class="contact-status-list">
+              <p><span class="status-dot"></span>Open to software and ML opportunities</p>
+              <p>Typical response time: within 24 hours</p>
+            </div>
+            <div class="project-card-actions">
+              <a class="external-link" id="contactSideLinkedinLink" href="https://www.linkedin.com/in/JayPatel190" target="_blank" rel="noreferrer">Connect</a>
+              <a class="external-link" id="contactSideGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">Code</a>
+            </div>
           </div>
         </div>
       </section>
@@ -547,8 +703,8 @@
           </div>
           <div class="wallpaper-grid" id="wallpaperPicker">
             <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/default_wallpaper.jpg">
-              <img class="wallpaper-preview" src="assets/images/wallpapers/default_wallpaper.jpg" alt="Default wallpaper preview" />
-              <span>Default</span>
+              <img class="wallpaper-preview" src="assets/images/wallpapers/default_wallpaper.jpg" alt="Classic wallpaper preview" />
+              <span>Classic</span>
               <img class="wallpaper-check" src="assets/images/baseImages/checked.svg" alt="" aria-hidden="true" />
             </button>
             <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/wallpaper1.jpg">
@@ -585,6 +741,10 @@
         <img src="assets/images/contextMenu/source_code.png" alt="" aria-hidden="true" />
         <span>Source Code</span>
       </button>
+      <button class="context-menu-item" type="button" data-open-window="myPcWindow">
+        <img src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+        <span>My PC</span>
+      </button>
       <button class="context-menu-item" type="button" data-open-window="githubWindow">
         <img src="assets/images/contextMenu/github.svg" alt="" aria-hidden="true" />
         <span>GitHub</span>
@@ -612,6 +772,10 @@
 
       <div class="start-app-list">
         <p class="start-menu-heading">Apps</p>
+        <button class="start-entry" type="button" data-open-window="myPcWindow">
+          <img class="start-entry-icon" src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+          <span>My PC</span>
+        </button>
         <button class="start-entry" type="button" data-open-window="aboutWindow">
           <img class="start-entry-icon" src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
           <span>About Me</span>
@@ -621,7 +785,7 @@
           <span>VSCode</span>
         </button>
         <button class="start-entry" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo">
-          <img class="start-entry-icon" src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+          <img class="start-entry-icon" src="assets/images/apps/leagueOfLegends.svg" alt="" aria-hidden="true" />
           <span>LoL Demo</span>
         </button>
         <button class="start-entry" type="button" data-open-window="contactWindow">
@@ -670,6 +834,10 @@
         </div>
 
         <div class="start-tile-grid">
+          <button class="start-tile" type="button" data-open-window="myPcWindow">
+            <img src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+            <span>My PC</span>
+          </button>
           <button class="start-tile" type="button" data-open-window="aboutWindow">
             <img src="assets/images/apps/aboutMe.png" alt="" aria-hidden="true" />
             <span>About</span>
@@ -679,7 +847,7 @@
             <span>Code</span>
           </button>
           <button class="start-tile" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo">
-            <img src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+            <img src="assets/images/apps/leagueOfLegends.svg" alt="" aria-hidden="true" />
             <span>LoL Demo</span>
           </button>
           <button class="start-tile" type="button" data-open-window="githubWindow">
@@ -718,6 +886,9 @@
         </button>
 
         <div class="quick-launch" aria-label="Quick launch">
+          <button class="quick-launch-button" type="button" data-open-window="myPcWindow" aria-label="Open My PC">
+            <img src="assets/images/apps/myPC.svg" alt="" aria-hidden="true" />
+          </button>
           <button class="quick-launch-button" type="button" data-open-window="codingWindow" aria-label="Open VSCode">
             <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
           </button>
