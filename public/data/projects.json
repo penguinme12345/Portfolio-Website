@@ -1,0 +1,63 @@
+{
+  "profile": {
+    "name": "Jay Patel",
+    "title": "Software Developer and Machine Learning Builder",
+    "tagline": "I build data-driven products, simulation systems, and desktop-ready ML tools.",
+    "location": "Toronto, ON",
+    "email": "jay.patell.2131@gmail.com",
+    "github": "https://github.com/penguinme12345",
+    "linkedin": "https://www.linkedin.com/in/jay-patel-b55737319/",
+    "resumeUrl": "assets/documents/resume.pdf"
+  },
+  "codingProjects": [
+    {
+      "id": "code-lol-tracker",
+      "slug": "lol-stat-tracker",
+      "title": "LoL Stat Tracker",
+      "category": "Coding",
+      "featured": true,
+      "shortDescription": "A local-first League of Legends analytics and coaching app with ML insights and timeline-aware analysis.",
+      "fullDescription": "Built an end-to-end analytics system that ingests Riot match plus timeline data, engineers features, trains win prediction models, and returns coaching recommendations through both a FastAPI backend and an Electron desktop shell.",
+      "problem": "Players had raw match stats but no structured way to turn those stats into specific, high-impact improvements.",
+      "solution": "Created a pipeline for ingest/build/train/report, added contextual intelligence and performance scoring, and packaged the experience into a desktop app that can be shared without exposing API keys.",
+      "role": "Solo developer (ML, backend, desktop integration)",
+      "tools": ["Python", "FastAPI", "Electron", "Random Forest", "LightGBM"],
+      "technologies": ["Python", "FastAPI", "Electron", "Uvicorn", "Scikit-learn", "Riot API"],
+      "tags": ["machine-learning", "esports", "analytics", "desktop"],
+      "year": 2026,
+      "status": "Active",
+      "thumbnail": "",
+      "gallery": [],
+      "githubUrl": "https://github.com/penguinme12345/lol-stat-tracker",
+      "liveUrl": "#",
+      "externalUrl": "",
+      "aiSummary": "A full ML-powered coaching platform for League of Legends that combines timeline features, model predictions, and actionable performance guidance.",
+      "relatedProjects": ["code-civsim"]
+    },
+    {
+      "id": "code-civsim",
+      "slug": "civilization-machine-learning-simulator",
+      "title": "Civilization Machine Learning Simulator",
+      "category": "Coding",
+      "featured": true,
+      "shortDescription": "A deterministic agent-based civilization simulator with real-time visualization and headless batch analytics.",
+      "fullDescription": "Designed and built a seeded simulation engine that models civilizations through rule-based decisions, expansion, conflict, stochastic events, migration, and collapse behavior, with real-time Pygame rendering and structured run logs for analysis.",
+      "problem": "Most toy simulations are visually interesting but hard to reproduce, benchmark, or analyze at scale.",
+      "solution": "Implemented deterministic world generation, controllable runtime modes, and batch/headless runs that output JSON and CSV logs for repeatable analysis and balancing.",
+      "role": "Solo developer (simulation engine, visualization, systems design)",
+      "tools": ["Python", "Pygame", "NumPy", "Agent-Based Modeling"],
+      "technologies": ["Python", "Pygame-ce", "NumPy", "JSON/CSV logging"],
+      "tags": ["simulation", "machine-learning", "agents", "visualization"],
+      "year": 2026,
+      "status": "Active",
+      "thumbnail": "",
+      "gallery": [],
+      "githubUrl": "https://github.com/penguinme12345/civilization-machine-learning-simulator",
+      "liveUrl": "#",
+      "externalUrl": "",
+      "aiSummary": "A reproducible civilization simulation platform combining deterministic worldgen, agent behavior dynamics, and visual plus headless experimentation workflows.",
+      "relatedProjects": ["code-lol-tracker"]
+    }
+  ],
+  "solidworksProjects": []
+}

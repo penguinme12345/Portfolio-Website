@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Finance Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="finance-app">
+      <header class="app-header">
+        <div>
+          <p class="kicker">Standalone Project</p>
+          <h1>Personal Finance Tracker</h1>
+          <p class="subtext">Track cashflow, budgets, and spending habits with local-first data.</p>
+        </div>
+        <div class="header-actions">
+          <button id="loadSampleButton" type="button">Load Demo Data</button>
+          <button id="exportJsonButton" type="button">Export JSON</button>
+          <button id="exportCsvButton" type="button">Export CSV</button>
+        </div>
+      </header>
+
+      <section class="app-layout">
+        <article class="panel controls-panel">
+          <h2>Add Transaction</h2>
+          <form id="transactionForm" class="form-grid">
+            <label>
+              Type
+              <select id="txType" required>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            <label>
+              Amount
+              <input id="txAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+            </label>
+            <label>
+              Category
+              <select id="txCategory" required>
+                <option value="Salary">Salary</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Food">Food</option>
+                <option value="Housing">Housing</option>
+                <option value="Transport">Transport</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Health">Health</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Education">Education</option>
+                <option value="Utilities">Utilities</option>
+              </select>
+            </label>
+            <label>
+              Date
+              <input id="txDate" type="date" required />
+            </label>
+            <label class="full-width">
+              Note
+              <input id="txNote" type="text" maxlength="120" placeholder="Optional note" />
+            </label>
+            <button class="primary-btn full-width" type="submit">Add Transaction</button>
+          </form>
+
+          <h2>Set Monthly Budget</h2>
+          <form id="budgetForm" class="form-grid">
+            <label>
+              Category
+              <select id="budgetCategory" required>
+                <option value="Food">Food</option>
+                <option value="Housing">Housing</option>
+                <option value="Transport">Transport</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Health">Health</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Education">Education</option>
+                <option value="Utilities">Utilities</option>
+              </select>
+            </label>
+            <label>
+              Budget
+              <input id="budgetAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+            </label>
+            <button class="full-width" type="submit">Save Budget</button>
+          </form>
+
+          <div class="control-group">
+            <label for="monthFilter">Month Filter</label>
+            <input id="monthFilter" type="month" />
+          </div>
+
+          <div class="control-group">
+            <label for="categoryFilter">Category Filter</label>
+            <select id="categoryFilter">
+              <option value="all">All categories</option>
+            </select>
+          </div>
+
+          <button id="clearDataButton" type="button" class="danger-btn">Clear All Data</button>
+          <p id="statusText" class="status-text" aria-live="polite"></p>
+        </article>
+
+        <article class="panel dashboard-panel">
+          <section class="metric-grid">
+            <div class="metric-card">
+              <p>Monthly Income</p>
+              <h3 id="metricIncome">$0.00</h3>
+            </div>
+            <div class="metric-card">
+              <p>Monthly Expenses</p>
+              <h3 id="metricExpenses">$0.00</h3>
+            </div>
+            <div class="metric-card">
+              <p>Net Cashflow</p>
+              <h3 id="metricNet">$0.00</h3>
+            </div>
+            <div class="metric-card">
+              <p>Savings Rate</p>
+              <h3 id="metricSavingsRate">0%</h3>
+            </div>
+          </section>
+
+          <section class="chart-panel">
+            <div class="section-head">
+              <h2>Cashflow Trend</h2>
+              <p id="trendLabel">Daily cumulative net for selected month</p>
+            </div>
+            <svg id="cashflowChart" viewBox="0 0 720 180" role="img" aria-label="Cashflow trend chart"></svg>
+          </section>
+
+          <section class="budget-panel">
+            <div class="section-head">
+              <h2>Budget Health</h2>
+              <p>Expense categories against configured monthly budgets</p>
+            </div>
+            <div id="budgetList" class="budget-list"></div>
+          </section>
+
+          <section class="table-panel">
+            <div class="section-head">
+              <h2>Transactions</h2>
+              <p>Latest entries for selected month and filter</p>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="txTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </article>
+      </section>
+    </main>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

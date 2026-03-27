@@ -41,9 +41,25 @@
           <span class="desktop-icon-label">VSCode</span>
         </button>
 
+        <button
+          class="desktop-icon"
+          type="button"
+          data-open-window="codingWindow"
+          data-open-coding-workspace="lol-demo"
+          aria-label="Open LoL Demo"
+        >
+          <img class="desktop-icon-image" src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">LoL Demo</span>
+        </button>
+
         <button class="desktop-icon" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
           <img class="desktop-icon-image" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
           <span class="desktop-icon-label">Contact Me</span>
+        </button>
+
+        <button class="desktop-icon" type="button" data-open-window="financeWindow" aria-label="Open Finance Tracker">
+          <img class="desktop-icon-image" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span class="desktop-icon-label">Finance Tracker</span>
         </button>
 
         <button class="desktop-icon" type="button" data-open-window="githubWindow" aria-label="Open Chrome">
@@ -92,6 +108,7 @@
             This portfolio now uses the original Portfolio_OS_Theme Windows visual language, including the same desktop
             wallpaper system, taskbar feel, lock screen image, and app icon set.
           </p>
+          <div class="insight-grid" id="aboutHighlights"></div>
           <ul class="about-list" id="profileQuickFacts"></ul>
         </div>
       </section>
@@ -116,15 +133,226 @@
           </div>
         </div>
         <div class="window-content">
-          <div class="tools-row">
-            <label for="searchProjects">Search</label>
-            <input id="searchProjects" type="search" placeholder="Search by title, tags, or tools" />
-            <label for="filterTools">Filter</label>
-            <select id="filterTools">
-              <option value="all">All tools</option>
-            </select>
+          <div class="workspace-tabs" role="group" aria-label="VSCode workspace views">
+            <button class="workspace-tab is-active" type="button" data-coding-workspace="projects">Project Explorer</button>
+            <button class="workspace-tab" type="button" data-coding-workspace="lol-demo">LoL Mini Demo</button>
           </div>
-          <div class="project-grid" id="codingProjectsGrid"></div>
+          <div id="codingProjectsWorkspace">
+            <div class="tools-row">
+              <label for="searchProjects">Search</label>
+              <input id="searchProjects" type="search" placeholder="Search by title, tags, or tools" />
+              <label for="filterTools">Filter</label>
+              <select id="filterTools">
+                <option value="all">All tools</option>
+              </select>
+              <label for="sortCodingProjects">Sort</label>
+              <select id="sortCodingProjects">
+                <option value="featured">Featured first</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="title">Title A-Z</option>
+              </select>
+            </div>
+            <div class="window-secondary-row">
+              <p class="window-meta" id="codingResultMeta">0 projects</p>
+              <div class="segmented-control" role="group" aria-label="Coding view mode">
+                <button class="segment-button is-active" type="button" data-coding-view="cards">Cards</button>
+                <button class="segment-button" type="button" data-coding-view="list">File list</button>
+              </div>
+            </div>
+            <div class="coding-shell" id="codingCardsView">
+              <div class="project-grid" id="codingProjectsGrid"></div>
+              <aside class="project-preview-panel" id="codingPreviewPanel">
+                <p class="muted">Select a project to preview details here.</p>
+              </aside>
+            </div>
+            <div class="coding-list-view" id="codingListView" hidden></div>
+          </div>
+
+          <section class="lol-demo-workspace" id="lolDemoWorkspace" hidden>
+            <div class="lol-demo-shell">
+              <article class="lol-control-panel">
+                <p class="demo-kicker">LoL Coach Tracker Sandbox</p>
+                <h3 class="demo-title">Interactive Match Intelligence</h3>
+                <p class="detail-copy">
+                  Tune match context and performance signals to simulate how the coaching engine shifts win probability
+                  and focus recommendations.
+                </p>
+
+                <div class="lol-control-grid">
+                  <label class="demo-field" for="lolDemoChampion">
+                    Champion
+                    <select id="lolDemoChampion">
+                      <option value="ahri">Ahri</option>
+                      <option value="akali">Akali</option>
+                      <option value="anivia">Anivia</option>
+                      <option value="annie">Annie</option>
+                      <option value="aurelion-sol">Aurelion Sol</option>
+                      <option value="azir">Azir</option>
+                      <option value="cassiopeia">Cassiopeia</option>
+                      <option value="diana">Diana</option>
+                      <option value="ekko">Ekko</option>
+                      <option value="fizz">Fizz</option>
+                      <option value="galio">Galio</option>
+                      <option value="irelia">Irelia</option>
+                      <option value="lee-sin">Lee Sin</option>
+                      <option value="jinx">Jinx</option>
+                      <option value="katarina">Katarina</option>
+                      <option value="leblanc">LeBlanc</option>
+                      <option value="lissandra">Lissandra</option>
+                      <option value="lux">Lux</option>
+                      <option value="malzahar">Malzahar</option>
+                      <option value="neeko">Neeko</option>
+                      <option value="ornn">Ornn</option>
+                      <option value="orianna">Orianna</option>
+                      <option value="pantheon">Pantheon</option>
+                      <option value="qiyana">Qiyana</option>
+                      <option value="ryze">Ryze</option>
+                      <option value="swain">Swain</option>
+                      <option value="sylas">Sylas</option>
+                      <option value="thresh">Thresh</option>
+                      <option value="talon">Talon</option>
+                      <option value="veigar">Veigar</option>
+                      <option value="vex">Vex</option>
+                      <option value="viktor">Viktor</option>
+                      <option value="yasuo">Yasuo</option>
+                      <option value="yone">Yone</option>
+                      <option value="zed">Zed</option>
+                      <option value="zoe">Zoe</option>
+                    </select>
+                  </label>
+                  <label class="demo-field" for="lolDemoRole">
+                    Role
+                    <select id="lolDemoRole">
+                      <option value="MID">Mid</option>
+                      <option value="JUNGLE">Jungle</option>
+                      <option value="ADC">ADC</option>
+                      <option value="SUPPORT">Support</option>
+                      <option value="TOP">Top</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="slider-control">
+                  <label for="lolDemoGameLength">Game length</label>
+                  <div class="slider-row">
+                    <input id="lolDemoGameLength" type="range" min="20" max="45" value="31" />
+                    <span id="lolDemoGameLengthValue">31 min</span>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <label for="lolDemoGoldLead">Early gold lead (15m)</label>
+                  <div class="slider-row">
+                    <input id="lolDemoGoldLead" type="range" min="-2500" max="2500" step="50" value="650" />
+                    <span id="lolDemoGoldLeadValue">+650g</span>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <label for="lolDemoDeaths">Deaths</label>
+                  <div class="slider-row">
+                    <input id="lolDemoDeaths" type="range" min="0" max="12" value="4" />
+                    <span id="lolDemoDeathsValue">4</span>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <label for="lolDemoVision">Vision impact</label>
+                  <div class="slider-row">
+                    <input id="lolDemoVision" type="range" min="20" max="100" value="58" />
+                    <span id="lolDemoVisionValue">58</span>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <label for="lolDemoObjectives">Objective control</label>
+                  <div class="slider-row">
+                    <input id="lolDemoObjectives" type="range" min="15" max="100" value="54" />
+                    <span id="lolDemoObjectivesValue">54</span>
+                  </div>
+                </div>
+                <div class="slider-control">
+                  <label for="lolDemoConsistency">Consistency</label>
+                  <div class="slider-row">
+                    <input id="lolDemoConsistency" type="range" min="35" max="100" value="68" />
+                    <span id="lolDemoConsistencyValue">68</span>
+                  </div>
+                </div>
+
+                <div class="project-card-actions">
+                  <button class="small-btn" id="lolDemoRunButton" type="button">Run Analysis</button>
+                  <button class="small-btn" id="lolDemoResetButton" type="button">Reset Scenario</button>
+                </div>
+              </article>
+
+              <article class="lol-output-panel">
+                <div class="lol-metric-grid">
+                  <section class="lol-metric-card">
+                    <p class="insight-label">Performance Index</p>
+                    <div class="score-ring" id="lolDemoScoreRing">
+                      <span id="lolDemoScoreValue">72</span>
+                    </div>
+                    <p class="window-meta">Model confidence: <strong id="lolDemoConfidence">High</strong></p>
+                  </section>
+                  <section class="lol-metric-card">
+                    <p class="insight-label">Win Probability</p>
+                    <p class="probability-value" id="lolDemoWinProbLabel">64%</p>
+                    <div class="probability-track">
+                      <div class="probability-fill" id="lolDemoWinProbFill"></div>
+                    </div>
+                    <p class="window-meta" id="lolDemoFocusGoal">Focus: Keep deaths &lt;= 4</p>
+                  </section>
+                </div>
+
+                <section class="lol-panel-block">
+                  <p class="insight-label">Top Improvements</p>
+                  <ul class="demo-list" id="lolDemoRecommendations"></ul>
+                </section>
+
+                <section class="lol-panel-block">
+                  <p class="insight-label">Recent Match Trend</p>
+                  <div class="trend-bars" id="lolDemoTrendBars"></div>
+                </section>
+
+                <section class="lol-panel-block">
+                  <p class="insight-label">Timeline Signals</p>
+                  <ul class="demo-list timeline-list" id="lolDemoEventFeed"></ul>
+                </section>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section
+        class="window window-wide"
+        id="financeWindow"
+        data-window-title="Finance Tracker"
+        data-x="360"
+        data-y="96"
+        aria-labelledby="financeTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <img class="window-app-icon" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+            <h2 id="financeTitle">Finance Tracker</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="financeWindow" aria-label="Minimize Finance Tracker">_</button>
+            <button class="window-control close-window" type="button" data-close-window="financeWindow" aria-label="Close Finance Tracker">x</button>
+          </div>
+        </div>
+        <div class="window-content">
+          <div class="embedded-app-shell">
+            <div class="embedded-app-toolbar">
+              <p class="window-meta">Standalone project embedded as a desktop app.</p>
+              <a class="external-link" href="/apps/personal-finance-tracker/index.html" target="_blank" rel="noreferrer">Open in new tab</a>
+            </div>
+            <iframe
+              class="embedded-app-frame"
+              title="Personal Finance Tracker"
+              src="/apps/personal-finance-tracker/index.html"
+              loading="lazy"
+            ></iframe>
+          </div>
         </div>
       </section>
 
@@ -148,6 +376,31 @@
           </div>
         </div>
         <div class="window-content">
+          <div class="window-secondary-row">
+            <p class="window-meta">Quick manufacturing view</p>
+            <label class="inline-control" for="solidworksSort">
+              Sort
+              <select id="solidworksSort">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="title">Title A-Z</option>
+              </select>
+            </label>
+          </div>
+          <div class="stat-strip" id="solidworksSummary"></div>
+          <div class="table-shell">
+            <table class="project-table" aria-label="SolidWorks project list">
+              <thead>
+                <tr>
+                  <th scope="col">Project</th>
+                  <th scope="col">Year</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Action</th>
+                </tr>
+              </thead>
+              <tbody id="solidworksTableBody"></tbody>
+            </table>
+          </div>
           <div class="project-grid" id="solidworksProjectsGrid"></div>
         </div>
       </section>
@@ -175,6 +428,8 @@
           <p class="window-lead">Launch my GitHub profile the same way the original OS theme launches browser content.</p>
           <a id="githubLink" class="external-link" href="#" target="_blank" rel="noreferrer">Open GitHub profile</a>
           <p class="muted">Use this as the browser shortcut for repositories, experiments, and pinned work.</p>
+          <div class="quick-link-list" id="githubQuickLinks"></div>
+          <div class="quick-link-list" id="githubFeaturedLinks"></div>
         </div>
       </section>
 
@@ -201,19 +456,23 @@
           <div>
             <p class="window-lead">Reach out directly or open the portfolio documents below.</p>
             <ul class="contact-list">
-              <li>Email: <a id="emailLink" href="#">you@example.com</a></li>
-              <li>LinkedIn: <a id="linkedinLink" href="#" target="_blank" rel="noreferrer">Profile</a></li>
-              <li>GitHub: <a id="contactGithubLink" href="#" target="_blank" rel="noreferrer">Repositories</a></li>
-              <li>Resume: <a id="resumeLink" href="#" target="_blank" rel="noreferrer">Open document</a></li>
+              <li>Email: <a id="emailLink" href="mailto:jay.patell.2131@gmail.com">jay.patell.2131@gmail.com</a></li>
+              <li>LinkedIn: <a id="linkedinLink" href="https://www.linkedin.com/in/jay-patel-b55737319/" target="_blank" rel="noreferrer">Profile</a></li>
+              <li>GitHub: <a id="contactGithubLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer">Repositories</a></li>
+              <li>Resume: <a id="resumeLink" href="assets/documents/resume.pdf" target="_blank" rel="noreferrer">Open document</a></li>
             </ul>
+            <div class="project-card-actions">
+              <button class="small-btn" id="copyEmailButton" type="button">Copy email address</button>
+            </div>
+            <p class="muted toast-message" id="contactToast" aria-live="polite"></p>
             <div class="social-links">
-              <a class="social-link" id="emailSocialLink" href="#" aria-label="Send email">
+              <a class="social-link" id="emailSocialLink" href="mailto:jay.patell.2131@gmail.com" aria-label="Send email">
                 <img src="assets/images/social/email.png" alt="" aria-hidden="true" />
               </a>
-              <a class="social-link" id="linkedinSocialLink" href="#" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
+              <a class="social-link" id="linkedinSocialLink" href="https://www.linkedin.com/in/jay-patel-b55737319/" target="_blank" rel="noreferrer" aria-label="Open LinkedIn">
                 <img src="assets/images/social/linkedin.svg" alt="" aria-hidden="true" />
               </a>
-              <a class="social-link" id="githubSocialLink" href="#" target="_blank" rel="noreferrer" aria-label="Open GitHub">
+              <a class="social-link" id="githubSocialLink" href="https://github.com/penguinme12345" target="_blank" rel="noreferrer" aria-label="Open GitHub">
                 <img src="assets/images/social/github.svg" alt="" aria-hidden="true" />
               </a>
             </div>
@@ -244,7 +503,14 @@
             <button class="window-control close-window" type="button" data-close-window="detailWindow" aria-label="Close Word">x</button>
           </div>
         </div>
-        <div class="window-content" id="detailContent"></div>
+        <div class="window-content">
+          <div class="detail-tabs" id="detailTabs" role="tablist" aria-label="Project detail tabs">
+            <button class="detail-tab is-active" type="button" data-detail-tab="overview" role="tab">Overview</button>
+            <button class="detail-tab" type="button" data-detail-tab="impact" role="tab">Impact</button>
+            <button class="detail-tab" type="button" data-detail-tab="stack" role="tab">Stack & Links</button>
+          </div>
+          <div id="detailContent"></div>
+        </div>
       </section>
 
       <section
@@ -269,6 +535,16 @@
         <div class="window-content">
           <p class="window-lead">Desktop & Wallpaper</p>
           <p class="detail-copy">These are the original Portfolio_OS_Theme desktop wallpapers copied into this portfolio.</p>
+          <div class="settings-toggle-list">
+            <label class="settings-toggle">
+              <input id="toggleWindowGlow" type="checkbox" checked />
+              <span>Enhanced window glow</span>
+            </label>
+            <label class="settings-toggle">
+              <input id="toggleLargeText" type="checkbox" />
+              <span>Large readability text</span>
+            </label>
+          </div>
           <div class="wallpaper-grid" id="wallpaperPicker">
             <button class="wallpaper-item" type="button" data-wallpaper="assets/images/wallpapers/default_wallpaper.jpg">
               <img class="wallpaper-preview" src="assets/images/wallpapers/default_wallpaper.jpg" alt="Default wallpaper preview" />
@@ -344,9 +620,17 @@
           <img class="start-entry-icon" src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
           <span>VSCode</span>
         </button>
+        <button class="start-entry" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo">
+          <img class="start-entry-icon" src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+          <span>LoL Demo</span>
+        </button>
         <button class="start-entry" type="button" data-open-window="contactWindow">
           <img class="start-entry-icon" src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
           <span>Contact Me</span>
+        </button>
+        <button class="start-entry" type="button" data-open-window="financeWindow">
+          <img class="start-entry-icon" src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          <span>Finance Tracker</span>
         </button>
         <button class="start-entry" type="button" data-open-window="githubWindow">
           <img class="start-entry-icon" src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
@@ -394,6 +678,10 @@
             <img src="assets/images/apps/vsCode.png" alt="" aria-hidden="true" />
             <span>Code</span>
           </button>
+          <button class="start-tile" type="button" data-open-window="codingWindow" data-open-coding-workspace="lol-demo">
+            <img src="assets/images/apps/jioSaavn.png" alt="" aria-hidden="true" />
+            <span>LoL Demo</span>
+          </button>
           <button class="start-tile" type="button" data-open-window="githubWindow">
             <img src="assets/images/apps/chrome.svg" alt="" aria-hidden="true" />
             <span>Web</span>
@@ -401,6 +689,10 @@
           <button class="start-tile" type="button" data-open-window="contactWindow">
             <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
             <span>Mail</span>
+          </button>
+          <button class="start-tile" type="button" data-open-window="financeWindow">
+            <img src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+            <span>Finance</span>
           </button>
           <button class="start-tile" type="button" data-open-window="detailWindow">
             <img src="assets/images/apps/word.svg" alt="" aria-hidden="true" />
@@ -435,6 +727,9 @@
           <button class="quick-launch-button" type="button" data-open-window="contactWindow" aria-label="Open Contact Me">
             <img src="assets/images/apps/mail.png" alt="" aria-hidden="true" />
           </button>
+          <button class="quick-launch-button" type="button" data-open-window="financeWindow" aria-label="Open Finance Tracker">
+            <img src="assets/images/apps/spreadsheet.svg" alt="" aria-hidden="true" />
+          </button>
           <button class="quick-launch-button" type="button" data-open-window="settingsWindow" aria-label="Open Settings">
             <img src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
           </button>
@@ -454,6 +749,6 @@
       </div>
     </nav>
 
-    <script src="app.js" type="module"></script>
+    <script src="app.js" defer></script>
   </body>
 </html>
