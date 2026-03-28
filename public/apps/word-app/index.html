@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Word App - a lightweight browser document editor." />
+    <title>Word App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <h1>Word App</h1>
+        <p>Local-first document editor</p>
+      </header>
+
+      <section class="toolbar" aria-label="Editor controls">
+        <div class="toolbar-group">
+          <button type="button" data-cmd="bold" title="Bold (Ctrl+B)">Bold</button>
+          <button type="button" data-cmd="italic" title="Italic (Ctrl+I)">Italic</button>
+          <button type="button" data-cmd="underline" title="Underline (Ctrl+U)">Underline</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button type="button" data-cmd="justifyLeft" title="Align left">Left</button>
+          <button type="button" data-cmd="justifyCenter" title="Align center">Center</button>
+          <button type="button" data-cmd="justifyRight" title="Align right">Right</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button type="button" id="newDocButton">New</button>
+          <button type="button" id="openDocButton">Open</button>
+          <button type="button" id="saveTxtButton">Save TXT</button>
+          <button type="button" id="saveHtmlButton">Save HTML</button>
+          <input id="openDocInput" type="file" accept=".txt,.md,.html,.htm" hidden />
+        </div>
+      </section>
+
+      <section class="editor-wrap" aria-label="Document editor">
+        <div
+          id="editor"
+          class="editor"
+          contenteditable="true"
+          spellcheck="true"
+          role="textbox"
+          aria-multiline="true"
+        ></div>
+      </section>
+
+      <footer class="statusbar">
+        <span id="statusMessage">Ready</span>
+        <span id="stats">Words: 0 | Characters: 0</span>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

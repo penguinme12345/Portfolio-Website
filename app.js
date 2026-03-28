@@ -4420,7 +4420,7 @@ function renderGithubQuickLinks() {
   }
 
   const { profile, codingProjects } = state.data;
-  const featured = codingProjects.filter((project) => project.featured).slice(0, 3);
+  const featured = codingProjects.filter((project) => project.featured);
 
   if (els.githubQuickLinks) {
     els.githubQuickLinks.innerHTML = `
