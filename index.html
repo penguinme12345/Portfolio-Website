@@ -88,6 +88,16 @@
         </button>
 
         <button
+          class="desktop-icon"
+          type="button"
+          data-open-window="portfolioAiWindow"
+          aria-label="Open AI Search"
+        >
+          <span class="desktop-icon-search-glyph" aria-hidden="true"></span>
+          <span class="desktop-icon-label">AI Search</span>
+        </button>
+
+        <button
           class="desktop-icon desktop-icon-secret"
           id="bonusDesktopIcon"
           type="button"
@@ -680,6 +690,47 @@
       </section>
 
       <section
+        class="window window-medium window-ai-search"
+        id="portfolioAiWindow"
+        data-window-title="AI Search"
+        data-x="505"
+        data-y="94"
+        aria-labelledby="portfolioAiTitle"
+        hidden
+      >
+        <div class="window-titlebar" data-drag-handle>
+          <div class="window-heading">
+            <span class="window-app-icon window-app-icon-ai" aria-hidden="true">&#10022;</span>
+            <h2 id="portfolioAiTitle">AI Search</h2>
+          </div>
+          <div class="window-controls">
+            <button class="window-control minimize-window" type="button" data-close-window="portfolioAiWindow" aria-label="Minimize AI Search">_</button>
+            <button class="window-control close-window" type="button" data-close-window="portfolioAiWindow" aria-label="Close AI Search">x</button>
+          </div>
+        </div>
+        <div class="window-content ai-search-shell">
+          <div class="ai-search-intro">
+            <p class="window-lead">Ask anything about Jay Patel's portfolio, projects, repos, or navigation.</p>
+            <p class="muted">This assistant only answers from the portfolio itself and linked project repositories.</p>
+          </div>
+          <div class="ai-search-suggestions" id="aiSearchSuggestions" aria-label="Suggested questions"></div>
+          <div id="aiSearchMessages" class="ai-search-messages" role="log" aria-live="polite" aria-label="AI portfolio conversation"></div>
+          <form id="aiSearchForm" class="ai-search-form">
+            <label class="sr-only" for="aiSearchInput">Ask about this portfolio</label>
+            <input
+              id="aiSearchInput"
+              class="ai-search-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Ask about a project, the tech stack, or say 'open my Google Docs website'"
+            />
+            <button id="aiSearchSend" class="small-btn ai-search-send" type="submit">Ask</button>
+          </form>
+          <p id="aiSearchStatus" class="ai-search-status">Grounded in portfolio data. Repo details load on demand for project-specific answers.</p>
+        </div>
+      </section>
+
+      <section
         class="window window-docs window-word"
         id="detailWindow"
         data-window-title="Word"
@@ -1058,6 +1109,10 @@
           <img class="start-entry-icon" src="assets/images/apps/settings.svg" alt="" aria-hidden="true" />
           <span>Settings</span>
         </button>
+        <button class="start-entry" type="button" data-open-window="portfolioAiWindow">
+          <span class="start-entry-search-glyph" aria-hidden="true"></span>
+          <span>AI Search</span>
+        </button>
         <label for="startSearch" class="sr-only">Search shortcuts</label>
         <input id="startSearch" class="start-search" type="search" placeholder="Type here to search" />
       </div>
@@ -1144,7 +1199,7 @@
           <span class="sr-only">Open start menu</span>
         </button>
 
-        <button class="taskbar-search" type="button" aria-label="Search">
+        <button id="taskbarSearchButton" class="taskbar-search" type="button" aria-label="Open AI search">
           <span class="taskbar-search-circle" aria-hidden="true"></span>
         </button>
 

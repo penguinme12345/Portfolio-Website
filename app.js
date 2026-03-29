@@ -149,6 +149,52 @@ const EXPLORER_APP_LIBRARY = [
   }
 ];
 
+const PORTFOLIO_ASSISTANT_SUGGESTIONS = [
+  "What makes the LoL tracker different?",
+  "Which projects use machine learning?",
+  "Compare the LoL tracker and Civ simulator",
+  "Open my Google Docs website"
+];
+const PORTFOLIO_ASSISTANT_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "any",
+  "about",
+  "can",
+  "for",
+  "from",
+  "how",
+  "i",
+  "if",
+  "in",
+  "is",
+  "it",
+  "me",
+  "my",
+  "of",
+  "on",
+  "or",
+  "open",
+  "launch",
+  "go",
+  "please",
+  "app",
+  "show",
+  "site",
+  "settings",
+  "tell",
+  "the",
+  "this",
+  "to",
+  "website",
+  "what",
+  "which",
+  "who",
+  "with",
+  "your"
+]);
+
 const state = {
   data: null,
   currentWallpaper: DEFAULT_WALLPAPER,
@@ -160,6 +206,7 @@ const state = {
     "solidworksWindow",
     "githubWindow",
     "contactWindow",
+    "portfolioAiWindow",
     "detailWindow",
     "settingsWindow",
     "bonusWindow"
@@ -217,6 +264,18 @@ const state = {
     windowGlow: true,
     largeText: false
   },
+  portfolioAssistant: {
+    messages: [],
+    isLoading: false,
+    initialized: false,
+    repoKnowledge: {},
+    context: {
+      activeProjectId: "",
+      lastIntent: "",
+      lastQuery: ""
+    }
+  },
+  startupWindowToOpen: "aboutWindow",
   exploration: {
     visitedWindows: [],
     bonusUnlocked: false,
@@ -235,6 +294,7 @@ const els = {
   startButton: document.getElementById("startButton"),
   startMenu: document.getElementById("startMenu"),
   startSearch: document.getElementById("startSearch"),
+  taskbarSearchButton: document.getElementById("taskbarSearchButton"),
   taskbarClock: document.getElementById("taskbarClock"),
   taskbarWindows: document.getElementById("taskbarWindows"),
   desktopContextMenu: document.getElementById("desktopContextMenu"),
@@ -325,6 +385,13 @@ const els = {
   githubLink: document.getElementById("githubLink"),
   githubQuickLinks: document.getElementById("githubQuickLinks"),
   githubFeaturedLinks: document.getElementById("githubFeaturedLinks"),
+  portfolioAiWindow: document.getElementById("portfolioAiWindow"),
+  aiSearchSuggestions: document.getElementById("aiSearchSuggestions"),
+  aiSearchMessages: document.getElementById("aiSearchMessages"),
+  aiSearchForm: document.getElementById("aiSearchForm"),
+  aiSearchInput: document.getElementById("aiSearchInput"),
+  aiSearchSend: document.getElementById("aiSearchSend"),
+  aiSearchStatus: document.getElementById("aiSearchStatus"),
   emailLink: document.getElementById("emailLink"),
   linkedinLink: document.getElementById("linkedinLink"),
   contactGithubLink: document.getElementById("contactGithubLink"),
@@ -374,6 +441,7 @@ async function init() {
   bindWordAppControls();
   bindContactActions();
   bindSettingsToggles();
+  bindPortfolioAssistantControls();
   bindBonusInteractions();
   startClocks();
   syncLolDemoControlsFromState();
@@ -397,6 +465,7 @@ async function init() {
     renderSolidworksProjects();
     renderGithubQuickLinks();
     showDefaultProject();
+    initializePortfolioAssistant();
     initializeExplorerData();
     renderExplorer();
   } catch (error) {
@@ -404,6 +473,7 @@ async function init() {
   }
 
   updateWindowButtons();
+  openStartupWindowIfReady();
 }
 
 function loadSavedPreferences() {
@@ -531,14 +601,33 @@ function syncPreferenceControls() {
 }
 
 function bindWindowButtons() {
+  const handleOpenWindowTrigger = (button) => {
+    const targetWorkspace = button.getAttribute("data-open-coding-workspace");
+    if (targetWorkspace) {
+      state.codingWorkspace = targetWorkspace;
+      updateCodingWorkspace();
+    }
+    openWindow(button.getAttribute("data-open-window"), { trigger: button });
+  };
+
   document.querySelectorAll("[data-open-window]").forEach((button) => {
+    const openMode = button.getAttribute("data-open-mode") || "click";
+    if (openMode === "dblclick") {
+      button.addEventListener("dblclick", () => {
+        handleOpenWindowTrigger(button);
+      });
+
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleOpenWindowTrigger(button);
+        }
+      });
+      return;
+    }
+
     button.addEventListener("click", () => {
-      const targetWorkspace = button.getAttribute("data-open-coding-workspace");
-      if (targetWorkspace) {
-        state.codingWorkspace = targetWorkspace;
-        updateCodingWorkspace();
-      }
-      openWindow(button.getAttribute("data-open-window"), { trigger: button });
+      handleOpenWindowTrigger(button);
     });
   });
 
@@ -593,6 +682,21 @@ function bindStartSearch() {
 
   els.startSearch.addEventListener("input", (event) => {
     filterStartEntries(event.target.value.trim().toLowerCase());
+  });
+
+  els.startSearch.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    const visibleTargets = filterStartEntries((els.startSearch?.value || "").trim().toLowerCase());
+    const firstMatch = visibleTargets[0];
+    if (!firstMatch) {
+      return;
+    }
+
+    firstMatch.click();
   });
 }
 
@@ -649,6 +753,12 @@ function bindWindowDragging() {
 
 function bindGlobalShortcuts() {
   document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openWindow("portfolioAiWindow");
+      return;
+    }
+
     if (event.key === "Escape") {
       const explorerMenuOpen =
         (els.explorerContextMenu && !els.explorerContextMenu.hidden) ||
@@ -3737,6 +3847,14 @@ function toggleStartMenu() {
     hideContextMenu();
     els.startMenu.hidden = false;
     els.startButton.setAttribute("aria-expanded", "true");
+    const startAppList = els.startMenu.querySelector(".start-app-list");
+    const startTiles = els.startMenu.querySelector(".start-tiles");
+    if (startAppList) {
+      startAppList.scrollTop = 0;
+    }
+    if (startTiles) {
+      startTiles.scrollTop = 0;
+    }
     els.startSearch?.focus();
     return;
   }
@@ -3759,10 +3877,64 @@ function closeStartMenu() {
 }
 
 function filterStartEntries(term) {
-  document.querySelectorAll(".start-entry").forEach((entry) => {
-    const entryText = entry.textContent.toLowerCase();
-    entry.hidden = term.length > 0 && !entryText.includes(term);
+  const normalizedTerm = String(term || "").trim().toLowerCase();
+  const startTargets = Array.from(document.querySelectorAll(".start-entry, .start-tile"));
+
+  const visibleTargets = startTargets.filter((target) => {
+    const haystack = [
+      target.textContent || "",
+      target.getAttribute("aria-label") || "",
+      target.getAttribute("data-subtitle") || "",
+      target.getAttribute("data-open-window") || "",
+      target.getAttribute("data-open-coding-workspace") || "",
+      ...(getStartSearchAliases(target) || [])
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const isVisible = normalizedTerm.length === 0 || haystack.includes(normalizedTerm);
+    target.hidden = !isVisible;
+    return isVisible;
   });
+
+  document.querySelectorAll(".start-tile-group").forEach((group) => {
+    const hasVisibleTile = Array.from(group.querySelectorAll(".start-tile")).some((tile) => !tile.hidden);
+    group.hidden = normalizedTerm.length > 0 && !hasVisibleTile;
+  });
+
+  return visibleTargets;
+}
+
+function getStartSearchAliases(target) {
+  const windowId = target.getAttribute("data-open-window") || "";
+  const workspace = target.getAttribute("data-open-coding-workspace") || "";
+  const aliases = [];
+
+  if (windowId === "myPcWindow") {
+    aliases.push("file explorer", "explorer", "files", "folders", "my pc");
+  } else if (windowId === "aboutWindow") {
+    aliases.push("profile", "about me", "bio", "background");
+  } else if (windowId === "codingWindow" && workspace === "lol-demo") {
+    aliases.push("lol", "league of legends", "stat tracker", "demo");
+  } else if (windowId === "codingWindow") {
+    aliases.push("vscode", "code", "projects", "project browser");
+  } else if (windowId === "contactWindow") {
+    aliases.push("email", "contact", "linkedin", "github");
+  } else if (windowId === "financeWindow") {
+    aliases.push("budget", "finance", "tracker", "expenses");
+  } else if (windowId === "githubWindow") {
+    aliases.push("chrome", "web", "browser", "github");
+  } else if (windowId === "detailWindow") {
+    aliases.push("word", "docs", "document", "editor");
+  } else if (windowId === "solidworksWindow") {
+    aliases.push("spreadsheet", "sheet", "table");
+  } else if (windowId === "settingsWindow") {
+    aliases.push("settings", "preferences", "options");
+  } else if (windowId === "portfolioAiWindow") {
+    aliases.push("ai", "assistant", "search", "chat");
+  }
+
+  return aliases;
 }
 
 function openWindow(windowId, options = {}) {
@@ -3783,6 +3955,16 @@ function openWindow(windowId, options = {}) {
 
   if (windowId === "myPcWindow") {
     renderExplorer();
+  }
+
+  if (windowId === "portfolioAiWindow") {
+    initializePortfolioAssistant();
+    window.setTimeout(() => {
+      els.aiSearchInput?.focus();
+    }, 70);
+    if (state.data) {
+      warmPortfolioAssistantKnowledge();
+    }
   }
 
   if (windowId === "detailWindow") {
@@ -3946,12 +4128,28 @@ function getOpenWindows() {
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
 }
 
+function openStartupWindowIfReady() {
+  if (!state.startupWindowToOpen) {
+    return;
+  }
+
+  const launchWindowId = state.startupWindowToOpen;
+  const isLocked = Boolean(els.lockScreen && !els.lockScreen.hidden);
+  if (isLocked) {
+    return;
+  }
+
+  state.startupWindowToOpen = "";
+  openWindow(launchWindowId);
+}
+
 function unlockDesktop() {
   if (!els.lockScreen) {
     return;
   }
 
   els.lockScreen.hidden = true;
+  openStartupWindowIfReady();
 }
 
 function lockDesktop() {
@@ -4636,6 +4834,1306 @@ function projectLinkButtons(project) {
   return links.join("") || '<span class="muted">No external links available.</span>';
 }
 
+function bindPortfolioAssistantControls() {
+  els.taskbarSearchButton?.addEventListener("click", () => {
+    openWindow("portfolioAiWindow", { trigger: els.taskbarSearchButton });
+  });
+
+  els.aiSearchSuggestions?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-ai-suggestion]");
+    if (!button) {
+      return;
+    }
+
+    const query = button.getAttribute("data-ai-suggestion");
+    if (query) {
+      void submitPortfolioAssistantQuery(query);
+    }
+  });
+
+  els.aiSearchForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const query = els.aiSearchInput?.value.trim();
+    if (!query) {
+      els.aiSearchInput?.focus();
+      return;
+    }
+
+    if (els.aiSearchInput) {
+      els.aiSearchInput.value = "";
+    }
+    void submitPortfolioAssistantQuery(query);
+  });
+
+  els.aiSearchMessages?.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-ai-action]");
+    if (!actionButton) {
+      return;
+    }
+
+    executePortfolioAssistantAction({
+      type: actionButton.getAttribute("data-ai-action"),
+      windowId: actionButton.getAttribute("data-window-id") || "",
+      projectId: actionButton.getAttribute("data-project-id") || "",
+      url: actionButton.getAttribute("data-url") || "",
+      workspace: actionButton.getAttribute("data-workspace") || "",
+      label: actionButton.textContent?.trim() || "Open"
+    });
+  });
+}
+
+function initializePortfolioAssistant() {
+  renderPortfolioAssistantSuggestions();
+
+  if (state.portfolioAssistant.initialized) {
+    renderPortfolioAssistantMessages();
+    return;
+  }
+
+  state.portfolioAssistant.initialized = true;
+  state.portfolioAssistant.context = {
+    activeProjectId: "",
+    lastIntent: "overview",
+    lastQuery: ""
+  };
+  state.portfolioAssistant.messages = [
+    {
+      role: "assistant",
+      text:
+        "I can answer questions about Jay Patel's portfolio, explain projects using the portfolio data plus linked repo docs, and help open the right part of the site for you.",
+      sources: [{ label: "Portfolio data" }],
+      actions: [
+        { type: "open-window", windowId: "codingWindow", label: "Open projects" },
+        { type: "open-window", windowId: "contactWindow", label: "Open contact" },
+        { type: "open-window", windowId: "detailWindow", label: "Open Word app" }
+      ]
+    }
+  ];
+
+  renderPortfolioAssistantMessages();
+  setPortfolioAssistantStatus(
+    state.data
+      ? "Grounded in portfolio data. Repo details load on demand for project-specific answers."
+      : "Portfolio data is still loading. I can still help with navigation."
+  );
+}
+
+function renderPortfolioAssistantSuggestions() {
+  if (!els.aiSearchSuggestions) {
+    return;
+  }
+
+  els.aiSearchSuggestions.innerHTML = PORTFOLIO_ASSISTANT_SUGGESTIONS.map(
+    (suggestion) =>
+      `<button class="ai-search-chip" type="button" data-ai-suggestion="${escapeHtml(suggestion)}">${escapeHtml(
+        suggestion
+      )}</button>`
+  ).join("");
+}
+
+function renderPortfolioAssistantMessages() {
+  if (!els.aiSearchMessages) {
+    return;
+  }
+
+  const messages = state.portfolioAssistant.messages || [];
+  if (!messages.length) {
+    els.aiSearchMessages.innerHTML =
+      '<p class="ai-search-empty">Ask about projects, tech, skills, links, or where to navigate next.</p>';
+    return;
+  }
+
+  const messagesMarkup = messages
+    .map((message) => {
+      const sourcesMarkup = (message.sources || []).map((source) => renderPortfolioAssistantSource(source)).join("");
+      const actionsMarkup = (message.actions || [])
+        .map((action) => renderPortfolioAssistantActionButton(action))
+        .join("");
+
+      return `
+        <article class="ai-search-message is-${escapeHtml(message.role || "assistant")} ${
+        message.isNew ? "is-new" : ""
+      }">
+          <p class="ai-search-message-text">${escapeHtml(message.text || "").replace(/\n/g, "<br />")}</p>
+          ${sourcesMarkup ? `<div class="ai-search-meta">${sourcesMarkup}</div>` : ""}
+          ${actionsMarkup ? `<div class="ai-search-actions">${actionsMarkup}</div>` : ""}
+        </article>
+      `;
+    })
+    .join("");
+
+  const thinkingMarkup = state.portfolioAssistant.isLoading
+    ? `
+      <article class="ai-search-message is-assistant is-thinking">
+        <p class="ai-search-message-text">Thinking through your portfolio context...</p>
+        <div class="ai-search-thinking-dots" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </article>
+    `
+    : "";
+
+  els.aiSearchMessages.innerHTML = `${messagesMarkup}${thinkingMarkup}`;
+  messages.forEach((message) => {
+    if (message.isNew) {
+      message.isNew = false;
+    }
+  });
+  els.aiSearchMessages.scrollTop = els.aiSearchMessages.scrollHeight;
+}
+
+function renderPortfolioAssistantSource(source) {
+  if (!source?.label) {
+    return "";
+  }
+
+  if (source.url) {
+    return `<a class="ai-search-source" href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(
+      source.label
+    )}</a>`;
+  }
+
+  return `<span class="ai-search-source">${escapeHtml(source.label)}</span>`;
+}
+
+function renderPortfolioAssistantActionButton(action) {
+  if (!action?.type || !action?.label) {
+    return "";
+  }
+
+  const attrs = [
+    `data-ai-action="${escapeHtml(action.type)}"`,
+    action.windowId ? `data-window-id="${escapeHtml(action.windowId)}"` : "",
+    action.projectId ? `data-project-id="${escapeHtml(action.projectId)}"` : "",
+    action.url ? `data-url="${escapeHtml(action.url)}"` : "",
+    action.workspace ? `data-workspace="${escapeHtml(action.workspace)}"` : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `<button class="small-btn" type="button" ${attrs}>${escapeHtml(action.label)}</button>`;
+}
+
+function pushPortfolioAssistantMessage(message) {
+  state.portfolioAssistant.messages.push({ ...message, isNew: true });
+  if (state.portfolioAssistant.messages.length > 14) {
+    state.portfolioAssistant.messages = state.portfolioAssistant.messages.slice(-14);
+  }
+}
+
+function setPortfolioAssistantStatus(message) {
+  if (els.aiSearchStatus) {
+    els.aiSearchStatus.textContent = message;
+  }
+}
+
+async function submitPortfolioAssistantQuery(query) {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return;
+  }
+
+  initializePortfolioAssistant();
+  openWindow("portfolioAiWindow");
+  state.portfolioAssistant.context.lastQuery = trimmedQuery;
+
+  pushPortfolioAssistantMessage({ role: "user", text: trimmedQuery });
+  state.portfolioAssistant.isLoading = true;
+  renderPortfolioAssistantMessages();
+  setPortfolioAssistantStatus("Checking the portfolio and linked project docs...");
+
+  try {
+    const response = await buildPortfolioAssistantResponse(trimmedQuery);
+    if (response.context) {
+      state.portfolioAssistant.context = {
+        ...state.portfolioAssistant.context,
+        ...response.context
+      };
+    }
+    (response.autoActions || []).forEach((action) => {
+      executePortfolioAssistantAction(action);
+    });
+
+    pushPortfolioAssistantMessage({
+      role: "assistant",
+      text: response.text,
+      sources: response.sources || [],
+      actions: response.actions || []
+    });
+
+    setPortfolioAssistantStatus(
+      response.statusMessage || "Grounded in portfolio data. Ask about projects, skills, repos, or navigation."
+    );
+  } catch (error) {
+    pushPortfolioAssistantMessage({
+      role: "assistant",
+      text:
+        "I hit a problem while reading the portfolio sources. Please try again, or ask me to open the project directly.",
+      sources: [{ label: "Portfolio assistant" }]
+    });
+    setPortfolioAssistantStatus("Something went wrong while loading portfolio context.");
+  } finally {
+    state.portfolioAssistant.isLoading = false;
+    renderPortfolioAssistantMessages();
+    els.aiSearchInput?.focus();
+  }
+}
+
+async function buildPortfolioAssistantResponse(query) {
+  const conversationalProject = getContextualProjectForAssistant(query);
+
+  if (!state.data) {
+    const navigationIntent = resolvePortfolioNavigationIntent(query, []);
+    return {
+      text:
+        "The portfolio data is still loading, so I can only help with navigation right now. Try again in a moment for grounded project answers.",
+      sources: [{ label: "Portfolio shell" }],
+      actions: navigationIntent ? [navigationIntent.action] : [],
+      autoActions: navigationIntent ? [navigationIntent.action] : [],
+      context: {
+        lastIntent: navigationIntent ? "navigation" : "loading"
+      }
+    };
+  }
+
+  const relevantProjects = getRelevantProjectsForAssistant(query, conversationalProject);
+  const navigationIntent = resolvePortfolioNavigationIntent(query, relevantProjects);
+
+  if (!isPortfolioAssistantQueryInScope(query, relevantProjects, navigationIntent, conversationalProject)) {
+    return {
+      text:
+        "I can only answer questions about this portfolio, Jay's profile, the listed projects, linked repositories, or help you navigate the site.",
+      sources: [{ label: "Portfolio scope guard" }],
+      actions: [
+        { type: "open-window", windowId: "codingWindow", label: "Browse projects" },
+        { type: "open-window", windowId: "contactWindow", label: "Open contact" }
+      ],
+      context: {
+        lastIntent: "scope-guard"
+      }
+    };
+  }
+
+  if (navigationIntent && isMostlyNavigationQuery(query)) {
+    return {
+      text: navigationIntent.responseText,
+      sources: navigationIntent.sources,
+      actions: navigationIntent.followUpActions || [],
+      autoActions: [navigationIntent.action],
+      statusMessage: "Navigation complete.",
+      context: {
+        activeProjectId: relevantProjects[0]?.id || state.portfolioAssistant.context.activeProjectId,
+        lastIntent: "navigation"
+      }
+    };
+  }
+
+  const ratingResponse = buildPortfolioRatingResponse(query, relevantProjects, conversationalProject);
+  if (ratingResponse) {
+    return ratingResponse;
+  }
+
+  const profileResponse = buildPortfolioProfileResponse(query);
+  if (profileResponse) {
+    return profileResponse;
+  }
+
+  if (/(which|what|show|list).*(project|projects)|projects?\s+(use|with|for|are)/i.test(query)) {
+    const projectListResponse = buildPortfolioProjectListResponse(query);
+    if (projectListResponse) {
+      return projectListResponse;
+    }
+  }
+
+  if (relevantProjects.length >= 2 && /(compare|difference|different|vs\b|versus|between)/i.test(query)) {
+    return buildPortfolioComparisonResponse(relevantProjects.slice(0, 2), query);
+  }
+
+  if (relevantProjects.length) {
+    return buildPortfolioProjectResponse(query, relevantProjects[0], navigationIntent);
+  }
+
+  const projectListResponse = buildPortfolioProjectListResponse(query);
+  if (projectListResponse) {
+    return projectListResponse;
+  }
+
+  if (/(portfolio|website|site|what can you do|help|navigate)/i.test(query)) {
+    return buildPortfolioOverviewResponse();
+  }
+
+  return {
+    text:
+      "I can help with project breakdowns, tech stack questions, contact details, and opening the right portfolio window or link.",
+    sources: [{ label: "Portfolio data" }],
+    actions: [
+      { type: "open-window", windowId: "codingWindow", label: "Open projects" },
+      { type: "open-window", windowId: "aboutWindow", label: "Open about" }
+    ],
+    context: {
+      lastIntent: "generic-help"
+    }
+  };
+}
+
+function buildPortfolioProfileResponse(query) {
+  const profile = state.data?.profile;
+  if (!profile) {
+    return null;
+  }
+
+  if (/(contact|email|reach|hire|message)/i.test(query)) {
+    return {
+      text: `You can reach Jay at ${profile.email}. The portfolio also links to LinkedIn and GitHub from the Contact window.`,
+      sources: [
+        { label: "Profile contact" },
+        { label: "Contact window" }
+      ],
+      actions: [
+        { type: "open-window", windowId: "contactWindow", label: "Open contact" },
+        { type: "open-url", url: `mailto:${profile.email}`, label: "Email Jay" }
+      ]
+    };
+  }
+
+  if (/(resume|cv)/i.test(query)) {
+    return {
+      text: "The portfolio includes Jay's resume and keeps it linked from both the About and Contact areas.",
+      sources: [{ label: "Profile resume", url: profile.resumeUrl || "#" }],
+      actions: [{ type: "open-url", url: profile.resumeUrl || "#", label: "Open resume" }]
+    };
+  }
+
+  if (/(linkedin)/i.test(query)) {
+    return {
+      text: "Jay's LinkedIn is linked directly from the portfolio contact surfaces.",
+      sources: [{ label: "LinkedIn", url: profile.linkedin || "#" }],
+      actions: [{ type: "open-url", url: profile.linkedin || "#", label: "Open LinkedIn" }]
+    };
+  }
+
+  if (/(github profile|github account|github home)/i.test(query)) {
+    return {
+      text: "Jay's GitHub profile is the main code hub linked across the site, including the Chrome-style window.",
+      sources: [{ label: "GitHub profile", url: profile.github || "#" }],
+      actions: [
+        { type: "open-window", windowId: "githubWindow", label: "Open Chrome window" },
+        { type: "open-url", url: profile.github || "#", label: "Open GitHub profile" }
+      ]
+    };
+  }
+
+  if (/(location|based|where.*live)/i.test(query)) {
+    return {
+      text: `Jay is based in ${profile.location}.`,
+      sources: [{ label: "Profile location" }]
+    };
+  }
+
+  if (/(skills|strengths|specialties|specialises|specializes|experience|stack)/i.test(query)) {
+    const topTools = getTopPortfolioTools().slice(0, 6).join(", ");
+    return {
+      text: `${profile.name} is positioned as ${profile.title}. The strongest themes across the portfolio are ${topTools}.`,
+      sources: [
+        { label: "Profile headline" },
+        { label: "Project toolsets" }
+      ],
+      actions: [{ type: "open-window", windowId: "codingWindow", label: "Browse projects" }]
+    };
+  }
+
+  if (/(who is|name|title|about jay|about you)/i.test(query)) {
+    return {
+      text: `${profile.name} is a ${profile.title}. ${profile.tagline}`,
+      sources: [{ label: "Profile summary" }],
+      actions: [{ type: "open-window", windowId: "aboutWindow", label: "Open about" }]
+    };
+  }
+
+  return null;
+}
+
+function buildPortfolioOverviewResponse() {
+  const codingProjects = state.data?.codingProjects || [];
+  const featuredCount = codingProjects.filter((project) => project.featured).length;
+  return {
+    text: `This portfolio presents Jay Patel as a software developer and machine learning builder. It currently highlights ${codingProjects.length} coding projects, with ${featuredCount} featured, and includes desktop-style navigation for About, Contact, project browsing, the Word app, and the Finance Tracker.`,
+    sources: [
+      { label: "Profile summary" },
+      { label: "Project catalog" }
+    ],
+    actions: [
+      { type: "open-window", windowId: "aboutWindow", label: "Open about" },
+      { type: "open-window", windowId: "codingWindow", label: "Open projects" }
+    ]
+  };
+}
+
+function buildPortfolioRatingResponse(query, relevantProjects, conversationalProject) {
+  if (!/(rate|rating|score|how good|out of 10|review|grade)/i.test(query)) {
+    return null;
+  }
+
+  const normalizedQuery = normalizeAssistantText(query);
+  const targetProject =
+    conversationalProject ||
+    relevantProjects.find((project) => normalizedQuery.includes(normalizeAssistantText(project.title))) ||
+    null;
+
+  if (targetProject && /(it|this|that|project|repo|tracker|simulator|app)/i.test(query)) {
+    return {
+      text: `${targetProject.title} rating: 10/10 for portfolio presentation. It has clear problem-solution framing, strong technical depth, and credible implementation detail.`,
+      sources: [{ label: `${targetProject.title} portfolio entry` }],
+      actions: [{ type: "open-project", projectId: targetProject.id, label: `Open ${targetProject.title}` }],
+      context: {
+        activeProjectId: targetProject.id,
+        lastIntent: "rating-project"
+      }
+    };
+  }
+
+  return {
+    text:
+      "Portfolio rating: 10/10. The desktop-style interaction design is memorable, project depth is strong, and the ML/system projects clearly communicate technical ownership and impact.",
+    sources: [
+      { label: "Profile summary" },
+      { label: "Project catalog" }
+    ],
+    actions: [
+      { type: "open-window", windowId: "aboutWindow", label: "Open about" },
+      { type: "open-window", windowId: "codingWindow", label: "Open projects" }
+    ],
+    context: {
+      lastIntent: "rating-portfolio"
+    }
+  };
+}
+
+function buildPortfolioProjectListResponse(query) {
+  const projects = getProjectsMatchingAssistantQuery(query);
+  if (!projects.length) {
+    return null;
+  }
+
+  const lines = projects.slice(0, 4).map((project) => {
+    const tools = (project.tools || []).slice(0, 3).join(", ");
+    return `${project.title}: ${project.shortDescription}${tools ? ` Core tools: ${tools}.` : ""}`;
+  });
+
+  const actions = projects.slice(0, 3).map((project) => ({
+    type: "open-project",
+    projectId: project.id,
+    label: `Open ${project.title}`
+  }));
+
+  return {
+    text: `Here are the most relevant portfolio projects:\n${lines.join("\n")}`,
+    sources: [{ label: "Project catalog" }],
+    actions,
+    context: {
+      activeProjectId: projects[0]?.id || "",
+      lastIntent: "project-list"
+    }
+  };
+}
+
+async function buildPortfolioProjectResponse(query, project, navigationIntent = null) {
+  const knowledge = await getProjectRepositoryKnowledge(project);
+  const repoInsight = getRepositoryInsightForQuery(knowledge.readmeText || "", query);
+  const repoMetadataInsight = getRepositoryMetadataInsightForQuery(knowledge, query);
+  const projectTechStack = [...new Set([...(project.tools || []), ...(project.technologies || [])])];
+  const requestedTechnology = extractAssistantTechnologyCandidate(query);
+  const matchedTechnology = requestedTechnology
+    ? projectTechStack.find((entry) => {
+        const normalizedEntry = normalizeAssistantText(entry);
+        return (
+          normalizedEntry === requestedTechnology ||
+          normalizedEntry.includes(requestedTechnology) ||
+          requestedTechnology.includes(normalizedEntry)
+        );
+      })
+    : "";
+  const responseParts = [project.shortDescription || project.aiSummary || project.fullDescription].filter(Boolean);
+
+  if (/(problem|why|goal|solve|purpose)/i.test(query)) {
+    responseParts.push(`Problem: ${project.problem}`);
+    responseParts.push(`Solution: ${project.solution}`);
+  } else if (/(impact|result|outcome|value|recruiter|why should|business|benefit)/i.test(query)) {
+    responseParts.push(`Impact framing: ${project.aiSummary || project.fullDescription || project.shortDescription}`);
+    responseParts.push(`Problem solved: ${project.problem}`);
+    responseParts.push(`How it was solved: ${project.solution}`);
+  } else if (requestedTechnology) {
+    responseParts.push(
+      matchedTechnology
+        ? `${project.title} does use ${matchedTechnology}.`
+        : `${trimAssistantText(requestedTechnology, 40)} is not listed in the portfolio stack for ${project.title}.`
+    );
+  } else if (/(role|contribution|responsible|built by|your part)/i.test(query)) {
+    responseParts.push(`Role: ${project.role || "Solo developer"}.`);
+  } else if (/(tech|stack|tools|framework|language|built with)/i.test(query)) {
+    const stack = projectTechStack.slice(0, 8).join(", ");
+    responseParts.push(`Tech stack: ${stack || "Not specified in the portfolio data"}.`);
+  } else if (/(status|year|current|active|when)/i.test(query)) {
+    responseParts.push(`Status: ${project.status || "N/A"} (${project.year || "Current"}).`);
+  } else {
+    responseParts.push(project.fullDescription || project.aiSummary || "");
+  }
+
+  if (repoInsight) {
+    responseParts.push(`Repo context: ${repoInsight}`);
+  }
+
+  if (repoMetadataInsight) {
+    responseParts.push(repoMetadataInsight);
+  }
+
+  if (navigationIntent && /(open|show|launch|take me)/i.test(query)) {
+    responseParts.push(`I can open the ${navigationIntent.label.toLowerCase()} for you as well.`);
+  }
+
+  const sources = [{ label: `${project.title} portfolio entry` }];
+  if (knowledge.repoUrl) {
+    sources.push({ label: `${project.title} repo`, url: knowledge.repoUrl });
+  }
+  if (knowledge.readmeText) {
+    sources.push({ label: `${project.title} README` });
+  }
+  if (knowledge.languages?.length || knowledge.repoDescription) {
+    sources.push({ label: `${project.title} repo metadata` });
+  }
+
+  const actions = buildPortfolioProjectActions(project, knowledge);
+  if (navigationIntent?.action) {
+    actions.unshift(navigationIntent.action);
+  }
+
+  return {
+    text: responseParts.filter(Boolean).join("\n"),
+    sources,
+    actions,
+    context: {
+      activeProjectId: project.id,
+      lastIntent: "project-detail"
+    }
+  };
+}
+
+function buildPortfolioComparisonResponse(projects, query = "") {
+  const [left, right] = projects;
+  const leftTools = (left.tools || []).slice(0, 3).join(", ");
+  const rightTools = (right.tools || []).slice(0, 3).join(", ");
+  const normalizedQuery = normalizeAssistantText(query);
+  const preferRight = normalizedQuery.includes("second") || normalizedQuery.includes(normalizeAssistantText(right.title));
+
+  return {
+    text: `${left.title} focuses on ${left.shortDescription.toLowerCase()}. It leans on ${leftTools}.\n${right.title} focuses on ${right.shortDescription.toLowerCase()}. It leans on ${rightTools}.`,
+    sources: [
+      { label: `${left.title} portfolio entry` },
+      { label: `${right.title} portfolio entry` }
+    ],
+    actions: [
+      { type: "open-project", projectId: left.id, label: `Open ${left.title}` },
+      { type: "open-project", projectId: right.id, label: `Open ${right.title}` }
+    ],
+    context: {
+      activeProjectId: preferRight ? right.id : left.id,
+      lastIntent: "project-compare"
+    }
+  };
+}
+
+function buildPortfolioProjectActions(project, knowledge) {
+  const actions = [{ type: "open-project", projectId: project.id, label: `Open ${project.title}` }];
+  const projectWindowAction = getProjectWindowAction(project);
+
+  if (projectWindowAction) {
+    actions.push(projectWindowAction);
+  }
+
+  if (knowledge.repoUrl) {
+    actions.push({ type: "open-url", url: knowledge.repoUrl, label: "Open repo" });
+  }
+
+  if (project.liveUrl && project.liveUrl !== "#" && !projectWindowAction) {
+    actions.push({ type: "open-url", url: project.liveUrl, label: "Open live app" });
+  }
+
+  return dedupeAssistantActions(actions);
+}
+
+function getProjectWindowAction(project) {
+  if (!project) {
+    return null;
+  }
+
+  if (project.id === "code-word-app") {
+    return { type: "open-window", windowId: "detailWindow", label: "Open Word app" };
+  }
+
+  if (project.id === "code-finance-tracker") {
+    return { type: "open-window", windowId: "financeWindow", label: "Open finance app" };
+  }
+
+  if (project.id === "code-lol-tracker") {
+    return { type: "open-window", windowId: "codingWindow", workspace: "lol-demo", label: "Open LoL demo" };
+  }
+
+  if (project.id === "code-civsim") {
+    return { type: "open-project", projectId: project.id, label: `Focus ${project.title}` };
+  }
+
+  return null;
+}
+
+function dedupeAssistantActions(actions) {
+  const seen = new Set();
+  return actions.filter((action) => {
+    const key = [action.type, action.windowId, action.projectId, action.url, action.workspace].join("|");
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function getRelevantProjectsForAssistant(query, conversationalProject = null) {
+  const projects = [...(state.data?.codingProjects || []), ...(state.data?.solidworksProjects || [])];
+  const scoredProjects = projects
+    .map((project) => ({
+      project,
+      score: scoreProjectForAssistant(project, query)
+    }))
+    .filter((entry) => entry.score >= 4)
+    .sort((left, right) => right.score - left.score);
+
+  if (conversationalProject && isFollowUpProjectQuery(query)) {
+    const contextualEntry = scoredProjects.find((entry) => entry.project.id === conversationalProject.id);
+    if (contextualEntry) {
+      contextualEntry.score += 8;
+      scoredProjects.sort((left, right) => right.score - left.score);
+    } else {
+      scoredProjects.unshift({ project: conversationalProject, score: 8 });
+    }
+  }
+
+  return scoredProjects.map((entry) => entry.project);
+}
+
+function scoreProjectForAssistant(project, query) {
+  const normalizedQuery = normalizeAssistantText(query);
+  const queryTokens = tokenizeAssistantQuery(query);
+  const aliases = getProjectAssistantAliases(project);
+  const haystack = normalizeAssistantText(
+    [
+      project.title,
+      project.slug,
+      project.shortDescription,
+      project.fullDescription,
+      project.aiSummary,
+      project.problem,
+      project.solution,
+      project.role,
+      ...(project.tools || []),
+      ...(project.technologies || []),
+      ...(project.tags || [])
+    ].join(" ")
+  );
+
+  let score = 0;
+  aliases.forEach((alias) => {
+    const normalizedAlias = normalizeAssistantText(alias);
+    if (!normalizedAlias) {
+      return;
+    }
+
+    if (normalizedQuery.includes(normalizedAlias)) {
+      score += normalizedAlias.length >= 8 ? 8 : 5;
+    }
+  });
+
+  queryTokens.forEach((token) => {
+    if (haystack.includes(token)) {
+      score += 1;
+    }
+    if (normalizeAssistantText(project.title).includes(token)) {
+      score += 2;
+    }
+  });
+
+  return score;
+}
+
+function getProjectAssistantAliases(project) {
+  const aliases = [project.title, project.slug, project.id, ...(project.tags || [])];
+
+  if (project.id === "code-lol-tracker") {
+    aliases.push("lol", "league of legends", "league tracker", "lol tracker", "stat tracker", "riot");
+  }
+  if (project.id === "code-civsim") {
+    aliases.push("civ sim", "civilization simulator", "civilization sim", "agent simulation");
+  }
+  if (project.id === "code-word-app") {
+    aliases.push("google docs", "docs", "word", "document editor", "word processor");
+  }
+  if (project.id === "code-finance-tracker") {
+    aliases.push("budget app", "expense tracker", "finance app", "cashflow tracker");
+  }
+
+  return [...new Set(aliases.filter(Boolean))];
+}
+
+function isPortfolioAssistantQueryInScope(query, relevantProjects, navigationIntent, conversationalProject = null) {
+  if (relevantProjects.length || navigationIntent || conversationalProject) {
+    return true;
+  }
+
+  const normalizedQuery = normalizeAssistantText(query);
+  const scopeKeywords = [
+    "about",
+    "contact",
+    "email",
+    "github",
+    "linkedin",
+    "resume",
+    "portfolio",
+    "project",
+    "projects",
+    "website",
+    "site",
+    "skills",
+    "experience",
+    "machine learning",
+    "word app",
+    "finance tracker",
+    "google docs",
+    "settings",
+    "rating",
+    "rate",
+    "score"
+  ];
+
+  return scopeKeywords.some((keyword) => normalizedQuery.includes(normalizeAssistantText(keyword)));
+}
+
+function isFollowUpProjectQuery(query) {
+  return /(it|that|this|the project|the repo|its|this one)/i.test(query);
+}
+
+function getContextualProjectForAssistant(query) {
+  if (!state.data?.codingProjects?.length) {
+    return null;
+  }
+
+  const activeProjectId = state.portfolioAssistant.context.activeProjectId;
+  if (!activeProjectId) {
+    return null;
+  }
+
+  const project = findProjectById(activeProjectId);
+  if (!project) {
+    return null;
+  }
+
+  if (isFollowUpProjectQuery(query)) {
+    return project;
+  }
+
+  if (/(stack|tech|tool|framework|language|repo|github|architecture|model|algorithm|dataset|performance|result)/i.test(query)) {
+    return project;
+  }
+
+  return null;
+}
+
+function resolvePortfolioNavigationIntent(query, relevantProjects) {
+  if (!/(open|launch|show|take me|go to|navigate|bring up|pull up)/i.test(query)) {
+    return null;
+  }
+
+  const normalizedQuery = normalizeAssistantText(query);
+  const profile = state.data?.profile || {};
+  const contextualProject = getContextualProjectForAssistant(query);
+  const settingsKeywords = [
+    "settings",
+    "setting",
+    "settings app",
+    "preferences",
+    "options",
+    "setitngs",
+    "setttings",
+    "setings"
+  ];
+
+  if (settingsKeywords.some((keyword) => normalizedQuery.includes(normalizeAssistantText(keyword)))) {
+    return {
+      label: "Settings",
+      action: { type: "open-window", windowId: "settingsWindow", label: "Open settings" },
+      responseText: "Opened the Settings window.",
+      sources: [{ label: "Portfolio navigation" }]
+    };
+  }
+
+  if (!relevantProjects.length && contextualProject && /(repo|github|repository|source|project)/i.test(query)) {
+    if (/(repo|github|repository|source)/i.test(query) && contextualProject.githubUrl) {
+      return {
+        label: `${contextualProject.title} repository`,
+        action: { type: "open-url", url: contextualProject.githubUrl, label: "Open repo" },
+        responseText: `Opened the ${contextualProject.title} repository.`,
+        sources: [{ label: `${contextualProject.title} repo`, url: contextualProject.githubUrl }]
+      };
+    }
+
+    return {
+      label: contextualProject.title,
+      action: { type: "open-project", projectId: contextualProject.id, label: `Open ${contextualProject.title}` },
+      responseText: `Opened ${contextualProject.title} in the project browser.`,
+      sources: [{ label: `${contextualProject.title} portfolio entry` }]
+    };
+  }
+
+  if (relevantProjects.length) {
+    const project = relevantProjects[0];
+    if (/(repo|github|repository|source)/i.test(query) && project.githubUrl) {
+      return {
+        label: `${project.title} repository`,
+        action: { type: "open-url", url: project.githubUrl, label: "Open repo" },
+        responseText: `Opened the ${project.title} repository.`,
+        sources: [{ label: `${project.title} repo`, url: project.githubUrl }]
+      };
+    }
+
+    const projectWindowAction = getProjectWindowAction(project);
+    if (projectWindowAction) {
+      return {
+        label: projectWindowAction.label,
+        action: projectWindowAction,
+        responseText: `Opened ${project.title} inside the portfolio.`,
+        sources: [{ label: `${project.title} portfolio entry` }]
+      };
+    }
+
+    return {
+      label: project.title,
+      action: { type: "open-project", projectId: project.id, label: `Open ${project.title}` },
+      responseText: `Opened ${project.title} in the project browser.`,
+      sources: [{ label: `${project.title} portfolio entry` }]
+    };
+  }
+
+  const targets = [
+    {
+      keywords: ["about", "about me", "bio", "background"],
+      action: { type: "open-window", windowId: "aboutWindow", label: "Open about" },
+      responseText: "Opened the About window."
+    },
+    {
+      keywords: ["contact", "email", "mail", "reach out"],
+      action: { type: "open-window", windowId: "contactWindow", label: "Open contact" },
+      responseText: "Opened the Contact window."
+    },
+    {
+      keywords: ["projects", "project browser", "coding", "vscode"],
+      action: { type: "open-window", windowId: "codingWindow", label: "Open projects" },
+      responseText: "Opened the coding projects window."
+    },
+    {
+      keywords: ["google docs", "docs", "word app", "document editor", "word processor"],
+      action: { type: "open-window", windowId: "detailWindow", label: "Open Word app" },
+      responseText: "Opened the Word app, which is the Google Docs-style editor in this portfolio."
+    },
+    {
+      keywords: ["finance tracker", "budget app", "expense tracker", "finance app"],
+      action: { type: "open-window", windowId: "financeWindow", label: "Open finance app" },
+      responseText: "Opened the Finance Tracker app."
+    },
+    {
+      keywords: ["my pc", "explorer", "files", "folders"],
+      action: { type: "open-window", windowId: "myPcWindow", label: "Open My PC" },
+      responseText: "Opened My PC."
+    },
+    {
+      keywords: ["chrome", "browser", "github window"],
+      action: { type: "open-window", windowId: "githubWindow", label: "Open Chrome window" },
+      responseText: "Opened the Chrome-style window."
+    },
+    {
+      keywords: ["github profile", "github home", "github"],
+      action: { type: "open-url", url: profile.github || "#", label: "Open GitHub profile" },
+      responseText: "Opened Jay's GitHub profile."
+    },
+    {
+      keywords: ["linkedin"],
+      action: { type: "open-url", url: profile.linkedin || "#", label: "Open LinkedIn" },
+      responseText: "Opened Jay's LinkedIn profile."
+    },
+    {
+      keywords: ["resume", "cv"],
+      action: { type: "open-url", url: profile.resumeUrl || "#", label: "Open resume" },
+      responseText: "Opened the resume."
+    }
+  ];
+
+  const target = targets.find((entry) =>
+    entry.keywords.some((keyword) => normalizedQuery.includes(normalizeAssistantText(keyword)))
+  );
+
+  if (!target) {
+    return null;
+  }
+
+  return {
+    label: target.action.label,
+    action: target.action,
+    responseText: target.responseText,
+    sources: [{ label: "Portfolio navigation" }]
+  };
+}
+
+function isMostlyNavigationQuery(query) {
+  const normalized = normalizeAssistantText(query);
+  const tokens = tokenizeAssistantQuery(query);
+  return (
+    /(open|launch|show|take me|go to|navigate|bring up|pull up)/i.test(query) &&
+    !/(what|why|how|which|compare|difference|stack|tech|built|details)/i.test(query) &&
+    tokens.length <= 7 &&
+    normalized.length <= 80
+  );
+}
+
+function getProjectsMatchingAssistantQuery(query) {
+  const projects = state.data?.codingProjects || [];
+  const normalizedQuery = normalizeAssistantText(query);
+  const queryTokens = tokenizeAssistantQuery(query);
+
+  if (/(featured|best|highlight)/i.test(query)) {
+    return projects.filter((project) => project.featured);
+  }
+
+  if ((!queryTokens.length || queryTokens.length <= 2) && /(projects|portfolio|website|work)/i.test(query)) {
+    return projects;
+  }
+
+  const scored = projects
+    .map((project) => {
+      const haystack = normalizeAssistantText(
+        [
+          project.title,
+          project.shortDescription,
+          project.fullDescription,
+          ...(project.tags || []),
+          ...(project.tools || []),
+          ...(project.technologies || [])
+        ].join(" ")
+      );
+
+      let score = 0;
+      queryTokens.forEach((token) => {
+        if (haystack.includes(token)) {
+          score += 1;
+        }
+      });
+
+      if (normalizedQuery.includes("machine learning") && haystack.includes("machine learning")) {
+        score += 3;
+      }
+
+      return { project, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  return scored.map((entry) => entry.project);
+}
+
+function tokenizeAssistantQuery(value) {
+  return normalizeAssistantText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 1 && !PORTFOLIO_ASSISTANT_STOPWORDS.has(token));
+}
+
+function normalizeAssistantText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getTopPortfolioTools() {
+  const counts = new Map();
+  (state.data?.codingProjects || []).forEach((project) => {
+    [...(project.tools || []), ...(project.technologies || [])].forEach((tool) => {
+      counts.set(tool, (counts.get(tool) || 0) + 1);
+    });
+  });
+
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([tool]) => tool);
+}
+
+function getAllPortfolioTechnologies() {
+  return [
+    ...new Set(
+      [...(state.data?.codingProjects || []), ...(state.data?.solidworksProjects || [])].flatMap((project) => [
+        ...(project.tools || []),
+        ...(project.technologies || [])
+      ])
+    )
+  ];
+}
+
+function extractAssistantTechnologyCandidate(query) {
+  const normalizedQuery = normalizeAssistantText(query);
+  const knownTechnology = getAllPortfolioTechnologies().find((technology) =>
+    normalizedQuery.includes(normalizeAssistantText(technology))
+  );
+
+  if (knownTechnology) {
+    return normalizeAssistantText(knownTechnology);
+  }
+
+  const match = normalizedQuery.match(/(?:use|uses|using|with|built with|built on)\s+([a-z0-9 ]{2,40})/);
+  return match ? match[1].trim().split(" ").slice(0, 3).join(" ") : "";
+}
+
+async function getProjectRepositoryKnowledge(project) {
+  const existing = state.portfolioAssistant.repoKnowledge[project.id];
+  if (existing?.status === "ready") {
+    return existing;
+  }
+  if (existing?.status === "loading") {
+    return existing.promise;
+  }
+
+  const promise = fetchProjectRepositoryKnowledge(project);
+  state.portfolioAssistant.repoKnowledge[project.id] = {
+    status: "loading",
+    promise
+  };
+
+  try {
+    const result = await promise;
+    state.portfolioAssistant.repoKnowledge[project.id] = {
+      ...result,
+      status: "ready"
+    };
+    return state.portfolioAssistant.repoKnowledge[project.id];
+  } catch (error) {
+    const fallback = {
+      status: "error",
+      repoUrl: project.githubUrl || "",
+      readmeText: "",
+      repoDescription: "",
+      languages: [],
+      topics: []
+    };
+    state.portfolioAssistant.repoKnowledge[project.id] = fallback;
+    return fallback;
+  }
+}
+
+async function fetchProjectRepositoryKnowledge(project) {
+  const repo = parseGitHubRepoPath(project.githubUrl || "");
+  let repoUrl = project.githubUrl || "";
+  let readmeText = "";
+  let repoDescription = "";
+  let languages = [];
+  let topics = [];
+
+  if (repo) {
+    const repoMetaResponse = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}`, {
+      headers: { Accept: "application/vnd.github+json" }
+    });
+    if (repoMetaResponse.ok) {
+      const repoMeta = await repoMetaResponse.json();
+      repoUrl = repoMeta.html_url || repoUrl;
+      repoDescription = repoMeta.description || "";
+      topics = Array.isArray(repoMeta.topics) ? repoMeta.topics : [];
+    }
+
+    const languagesResponse = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}/languages`, {
+      headers: { Accept: "application/vnd.github+json" }
+    });
+    if (languagesResponse.ok) {
+      const languagesData = await languagesResponse.json();
+      languages = Object.keys(languagesData || {}).slice(0, 6);
+    }
+
+    const readmeResponse = await fetch(`https://api.github.com/repos/${repo.owner}/${repo.repo}/readme`, {
+      headers: { Accept: "application/vnd.github+json" }
+    });
+
+    if (readmeResponse.ok) {
+      const readmeData = await readmeResponse.json();
+      repoUrl = readmeData.html_url || repoUrl;
+      readmeText = decodeBase64Utf8(readmeData.content || "");
+    }
+  }
+
+  if (!readmeText) {
+    const localReadmePath = getLocalProjectReadmePath(project);
+    if (localReadmePath) {
+      const localResponse = await fetch(localReadmePath);
+      if (localResponse.ok) {
+        readmeText = await localResponse.text();
+      }
+    }
+  }
+
+  return {
+    repoUrl,
+    readmeText: cleanMarkdownForAssistant(readmeText),
+    repoDescription: String(repoDescription || "").trim(),
+    languages,
+    topics
+  };
+}
+
+function parseGitHubRepoPath(url) {
+  const match = String(url || "").match(/github\.com\/([^/]+)\/([^/#?]+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    owner: match[1],
+    repo: match[2].replace(/\.git$/i, "")
+  };
+}
+
+function decodeBase64Utf8(value) {
+  if (!value) {
+    return "";
+  }
+
+  const raw = atob(value.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(raw, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function getLocalProjectReadmePath(project) {
+  if (project.liveUrl && project.liveUrl.startsWith("/apps/")) {
+    return project.liveUrl.replace(/\/index\.html$/i, "/README.md");
+  }
+  return "";
+}
+
+function cleanMarkdownForAssistant(markdown) {
+  return String(markdown || "")
+    .replace(/\r/g, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*>\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function getRepositoryInsightForQuery(readmeText, query) {
+  if (!readmeText) {
+    return "";
+  }
+
+  const queryTokens = tokenizeAssistantQuery(query);
+  const segments = readmeText
+    .split(/\n\s*\n/)
+    .map((segment) => segment.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 40);
+
+  const scored = segments
+    .map((segment, index) => {
+      const normalizedSegment = normalizeAssistantText(segment);
+      let score = index === 0 ? 1 : 0;
+      queryTokens.forEach((token) => {
+        if (normalizedSegment.includes(token)) {
+          score += 2;
+        }
+      });
+      return { segment, score };
+    })
+    .sort((left, right) => right.score - left.score);
+
+  const best = scored.find((entry) => entry.score > 0) || scored[0];
+  if (!best) {
+    return "";
+  }
+
+  return trimAssistantText(best.segment, 260);
+}
+
+function getRepositoryMetadataInsightForQuery(knowledge, query) {
+  if (!knowledge) {
+    return "";
+  }
+
+  const normalizedQuery = normalizeAssistantText(query);
+  const wantsLanguageData = /(language|languages|tech stack|stack|built with|framework|tooling)/i.test(query);
+  const wantsSummaryData = /(summary|overview|what is|describe|about|purpose)/i.test(query);
+
+  if (wantsLanguageData && Array.isArray(knowledge.languages) && knowledge.languages.length) {
+    return `Repo languages: ${knowledge.languages.join(", ")}.`;
+  }
+
+  if (wantsSummaryData && knowledge.repoDescription) {
+    return `Repository summary: ${trimAssistantText(knowledge.repoDescription, 180)}`;
+  }
+
+  if (normalizedQuery.includes("topic") && Array.isArray(knowledge.topics) && knowledge.topics.length) {
+    return `Repo topics: ${knowledge.topics.slice(0, 6).join(", ")}.`;
+  }
+
+  return "";
+}
+
+function trimAssistantText(value, maxLength = 240) {
+  const text = String(value || "").trim();
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength - 1).trimEnd()}...`;
+}
+
+function executePortfolioAssistantAction(action) {
+  if (!action?.type) {
+    return;
+  }
+
+  if (action.type === "open-window" && action.windowId) {
+    if (action.workspace) {
+      state.codingWorkspace = action.workspace;
+      updateCodingWorkspace();
+    }
+    openWindow(action.windowId);
+    return;
+  }
+
+  if (action.type === "open-project" && action.projectId) {
+    const project = findProjectById(action.projectId);
+    if (project) {
+      openProjectInPortfolio(project, true);
+    }
+    return;
+  }
+
+  if (action.type === "open-url" && action.url) {
+    window.open(action.url, "_blank", "noopener,noreferrer");
+  }
+}
+
+function warmPortfolioAssistantKnowledge() {
+  (state.data?.codingProjects || []).slice(0, 4).forEach((project) => {
+    void getProjectRepositoryKnowledge(project);
+  });
+}
+
 function renderDataError() {
   const message = '<p class="muted">Project data could not be loaded. The OS theme still works while the content file is being fixed.</p>';
 
@@ -4661,6 +6159,8 @@ function renderDataError() {
   if (els.githubFeaturedLinks) {
     els.githubFeaturedLinks.innerHTML = "";
   }
+  initializePortfolioAssistant();
+  setPortfolioAssistantStatus("Portfolio content failed to load, so answers are limited to navigation right now.");
 }
 
 async function copyTextToClipboard(value) {
