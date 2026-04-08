@@ -1,3 +1,8 @@
+import { inject } from '@vercel/analytics';
+
+// Initialize Vercel Web Analytics
+inject();
+
 const DEFAULT_WALLPAPER = "assets/images/wallpapers/wallpaper2.jpg";
 const SETTINGS_STORAGE_KEY = "portfolio_desktop_settings_v1";
 const EXPLORATION_STORAGE_KEY = "portfolio_desktop_exploration_v1";
