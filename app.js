@@ -66,6 +66,8 @@ const LOL_ROLE_MODIFIERS = {
 const WORD_DEFAULT_HTML = "<p><br></p>";
 const EXPLORER_ROOT_ID = "my-pc";
 const EXPLORER_TIMESTAMP = "2026-03-27 10:31 PM";
+const CONTEXT_SIDEBAR_WINDOWS = new Set(["myPcWindow", "codingWindow", "solidworksWindow"]);
+const DESKTOP_BREAKPOINT = 820;
 const EXPLORER_APP_LIBRARY = [
   {
     id: "my-pc-app",
@@ -275,12 +277,15 @@ const state = {
       lastQuery: ""
     }
   },
+  windowTriggers: new Map(),
   startupWindowToOpen: "aboutWindow",
   exploration: {
     visitedWindows: [],
     bonusUnlocked: false,
     revealedCount: 0
   },
+  calendarCursor: new Date(),
+  feedbackTimer: null,
   zIndex: 50
 };
 
@@ -296,6 +301,14 @@ const els = {
   startSearch: document.getElementById("startSearch"),
   taskbarSearchButton: document.getElementById("taskbarSearchButton"),
   taskbarClock: document.getElementById("taskbarClock"),
+  calendarPopover: document.getElementById("calendarPopover"),
+  calendarMonthLabel: document.getElementById("calendarMonthLabel"),
+  calendarFullDate: document.getElementById("calendarFullDate"),
+  calendarGrid: document.getElementById("calendarGrid"),
+  calendarPrevious: document.getElementById("calendarPrevious"),
+  calendarNext: document.getElementById("calendarNext"),
+  calendarToday: document.getElementById("calendarToday"),
+  desktopStatus: document.getElementById("desktopStatus"),
   taskbarWindows: document.getElementById("taskbarWindows"),
   desktopContextMenu: document.getElementById("desktopContextMenu"),
   aboutSummary: document.getElementById("aboutSummary"),
@@ -421,12 +434,15 @@ async function init() {
   applyPreferenceClasses();
   syncPreferenceControls();
   syncBonusVisibility();
+  enhanceUiSemantics();
 
   setWallpaper(state.currentWallpaper);
   bindWindowButtons();
   bindStartMenu();
+  bindCalendar();
   bindStartSearch();
   bindWindowDragging();
+  bindWindowResizing();
   bindGlobalShortcuts();
   bindLockScreen();
   bindContextMenu();
@@ -602,12 +618,31 @@ function syncPreferenceControls() {
 
 function bindWindowButtons() {
   const handleOpenWindowTrigger = (button) => {
-    const targetWorkspace = button.getAttribute("data-open-coding-workspace");
+    const windowId = button.getAttribute("data-open-window");
+    const targetWindow = document.getElementById(windowId);
+    if (!targetWindow) {
+      return;
+    }
+
+    const isLauncher = button.matches(
+      ".desktop-icon, .quick-launch-button, .tray-icon-button, .start-entry, .start-tile, .mobile-dock-nav [data-open-window]"
+    );
+    const previousWorkspace = state.codingWorkspace;
+    const targetWorkspace =
+      button.getAttribute("data-open-coding-workspace") || (windowId === "codingWindow" && isLauncher ? "projects" : "");
+
     if (targetWorkspace) {
       state.codingWorkspace = targetWorkspace;
       updateCodingWorkspace();
     }
-    openWindow(button.getAttribute("data-open-window"), { trigger: button });
+
+    const changedWorkspace = windowId === "codingWindow" && targetWorkspace && targetWorkspace !== previousWorkspace;
+    if (isLauncher && !changedWorkspace) {
+      toggleWindowFromLauncher(windowId, button);
+      return;
+    }
+
+    openWindow(windowId, { trigger: button });
   };
 
   document.querySelectorAll("[data-open-window]").forEach((button) => {
@@ -631,9 +666,15 @@ function bindWindowButtons() {
     });
   });
 
-  document.querySelectorAll("[data-close-window]").forEach((button) => {
+  document.querySelectorAll(".minimize-window").forEach((button) => {
     button.addEventListener("click", () => {
-      closeWindow(button.getAttribute("data-close-window"));
+      minimizeWindow(button.closest(".window")?.id || button.getAttribute("data-close-window"));
+    });
+  });
+
+  document.querySelectorAll(".close-window").forEach((button) => {
+    button.addEventListener("click", () => {
+      closeWindow(button.closest(".window")?.id || button.getAttribute("data-close-window"));
     });
   });
 
@@ -655,9 +696,13 @@ function bindStartMenu() {
     return;
   }
 
-  els.startButton.addEventListener("click", (event) => {
-    event.stopPropagation();
-    toggleStartMenu();
+  const startLaunchers = [els.startButton, document.getElementById("mobileAppsButton")].filter(Boolean);
+
+  startLaunchers.forEach((launcher) => {
+    launcher.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleStartMenu();
+    });
   });
 
   els.startMenu.addEventListener("click", (event) => {
@@ -670,9 +715,98 @@ function bindStartMenu() {
 
   document.addEventListener("click", () => {
     closeStartMenu();
+    closeCalendar();
     hideContextMenu();
     hideExplorerMenus();
   });
+}
+
+function bindCalendar() {
+  if (!els.taskbarClock || !els.calendarPopover) {
+    return;
+  }
+
+  els.taskbarClock.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpening = els.calendarPopover.hidden;
+    closeStartMenu();
+    els.calendarPopover.hidden = !isOpening;
+    els.taskbarClock.setAttribute("aria-expanded", String(isOpening));
+    if (isOpening) {
+      state.calendarCursor = new Date();
+      renderCalendar();
+    }
+  });
+
+  els.calendarPopover.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+
+  els.calendarPrevious?.addEventListener("click", () => {
+    state.calendarCursor = new Date(state.calendarCursor.getFullYear(), state.calendarCursor.getMonth() - 1, 1);
+    renderCalendar();
+  });
+
+  els.calendarNext?.addEventListener("click", () => {
+    state.calendarCursor = new Date(state.calendarCursor.getFullYear(), state.calendarCursor.getMonth() + 1, 1);
+    renderCalendar();
+  });
+
+  els.calendarToday?.addEventListener("click", () => {
+    state.calendarCursor = new Date();
+    renderCalendar();
+  });
+}
+
+function renderCalendar() {
+  if (!els.calendarGrid || !els.calendarMonthLabel || !els.calendarFullDate) {
+    return;
+  }
+
+  const cursor = state.calendarCursor;
+  const today = new Date();
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  els.calendarMonthLabel.textContent = cursor.toLocaleDateString([], { month: "long", year: "numeric" });
+  els.calendarFullDate.textContent = today.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  });
+
+  const cells = [];
+  for (let index = 0; index < firstWeekday; index += 1) {
+    cells.push('<span class="calendar-day is-empty" role="gridcell" aria-hidden="true"></span>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const label = new Date(year, month, day).toLocaleDateString([], {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    });
+    cells.push(
+      `<span class="calendar-day${isToday ? " is-today" : ""}" role="gridcell" aria-label="${escapeHtml(label)}"${
+        isToday ? ' aria-current="date"' : ""
+      }>${day}</span>`
+    );
+  }
+
+  els.calendarGrid.innerHTML = cells.join("");
+}
+
+function closeCalendar() {
+  if (!els.calendarPopover || els.calendarPopover.hidden) {
+    return;
+  }
+
+  els.calendarPopover.hidden = true;
+  els.taskbarClock?.setAttribute("aria-expanded", "false");
 }
 
 function bindStartSearch() {
@@ -710,7 +844,12 @@ function bindWindowDragging() {
     let dragState = null;
 
     handle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0 || event.target.closest(".window-controls")) {
+      if (
+        event.button !== 0 ||
+        event.target.closest(".window-controls") ||
+        windowEl.classList.contains("is-maximized") ||
+        window.matchMedia(`(max-width: ${DESKTOP_BREAKPOINT}px)`).matches
+      ) {
         return;
       }
 
@@ -724,6 +863,8 @@ function bindWindowDragging() {
       };
 
       handle.setPointerCapture(event.pointerId);
+      windowEl.classList.add("is-dragging");
+      document.body.classList.add("is-window-dragging");
       event.preventDefault();
     });
 
@@ -741,6 +882,8 @@ function bindWindowDragging() {
       }
 
       dragState = null;
+      windowEl.classList.remove("is-dragging");
+      document.body.classList.remove("is-window-dragging");
       if (handle.hasPointerCapture(event.pointerId)) {
         handle.releasePointerCapture(event.pointerId);
       }
@@ -748,7 +891,112 @@ function bindWindowDragging() {
 
     handle.addEventListener("pointerup", stopDragging);
     handle.addEventListener("pointercancel", stopDragging);
+
+    handle.addEventListener("dblclick", (event) => {
+      if (!event.target.closest(".window-controls") && !window.matchMedia(`(max-width: ${DESKTOP_BREAKPOINT}px)`).matches) {
+        toggleWindowFullscreenById(windowEl.id);
+      }
+    });
   });
+}
+
+function bindWindowResizing() {
+  document.querySelectorAll(".window").forEach((windowEl) => {
+    windowEl.querySelectorAll("[data-resize-direction]").forEach((handle) => {
+      let resizeState = null;
+
+      handle.addEventListener("pointerdown", (event) => {
+        if (
+          event.button !== 0 ||
+          windowEl.classList.contains("is-maximized") ||
+          window.matchMedia(`(max-width: ${DESKTOP_BREAKPOINT}px)`).matches
+        ) {
+          return;
+        }
+
+        bringWindowToFront(windowEl);
+        const rect = windowEl.getBoundingClientRect();
+        resizeState = {
+          pointerId: event.pointerId,
+          direction: handle.dataset.resizeDirection || "se",
+          startX: event.clientX,
+          startY: event.clientY,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height
+        };
+
+        handle.setPointerCapture(event.pointerId);
+        windowEl.classList.add("is-resizing");
+        document.body.classList.add("is-window-resizing");
+        event.preventDefault();
+        event.stopPropagation();
+      });
+
+      handle.addEventListener("pointermove", (event) => {
+        if (!resizeState || resizeState.pointerId !== event.pointerId) {
+          return;
+        }
+
+        resizeWindowFromPointer(windowEl, resizeState, event.clientX, event.clientY);
+      });
+
+      const stopResizing = (event) => {
+        if (!resizeState || resizeState.pointerId !== event.pointerId) {
+          return;
+        }
+
+        resizeState = null;
+        windowEl.classList.remove("is-resizing");
+        document.body.classList.remove("is-window-resizing");
+        if (handle.hasPointerCapture(event.pointerId)) {
+          handle.releasePointerCapture(event.pointerId);
+        }
+      };
+
+      handle.addEventListener("pointerup", stopResizing);
+      handle.addEventListener("pointercancel", stopResizing);
+    });
+  });
+}
+
+function resizeWindowFromPointer(windowEl, start, pointerX, pointerY) {
+  const direction = start.direction;
+  const deltaX = pointerX - start.startX;
+  const deltaY = pointerY - start.startY;
+  const taskbarHeight = document.querySelector(".taskbar")?.offsetHeight || 72;
+  const viewportBottom = window.innerHeight - taskbarHeight - 10;
+  const minWidth = Math.min(420, window.innerWidth - 24);
+  const minHeight = Math.min(300, viewportBottom - 12);
+  let left = start.left;
+  let top = start.top;
+  let width = start.width;
+  let height = start.height;
+
+  if (direction.includes("e")) {
+    width = clamp(start.width + deltaX, minWidth, window.innerWidth - start.left - 10);
+  }
+  if (direction.includes("s")) {
+    height = clamp(start.height + deltaY, minHeight, viewportBottom - start.top);
+  }
+  if (direction.includes("w")) {
+    const nextLeft = clamp(start.left + deltaX, 10, start.left + start.width - minWidth);
+    width = start.width + (start.left - nextLeft);
+    left = nextLeft;
+  }
+  if (direction.includes("n")) {
+    const nextTop = clamp(start.top + deltaY, 10, start.top + start.height - minHeight);
+    height = start.height + (start.top - nextTop);
+    top = nextTop;
+  }
+
+  windowEl.style.setProperty("left", `${left}px`, "important");
+  windowEl.style.setProperty("top", `${top}px`, "important");
+  windowEl.style.setProperty("width", `${width}px`, "important");
+  windowEl.style.setProperty("height", `${height}px`, "important");
+  windowEl.dataset.positioned = "true";
+  syncPortfolioSidebarGeometry(windowEl);
 }
 
 function bindGlobalShortcuts() {
@@ -775,6 +1023,11 @@ function bindGlobalShortcuts() {
 
       if (els.startMenu && !els.startMenu.hidden) {
         closeStartMenu();
+        return;
+      }
+
+      if (els.calendarPopover && !els.calendarPopover.hidden) {
+        closeCalendar();
         return;
       }
 
@@ -860,6 +1113,7 @@ function updateAboutModeButtons() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+  syncReferenceShell();
 }
 
 function renderAboutModePanel() {
@@ -873,43 +1127,51 @@ function renderAboutModePanel() {
   }
 
   const codingProjects = state.data.codingProjects || [];
-  const allProjects = [...codingProjects, ...(state.data.solidworksProjects || [])];
-  const formatProjectCount = (count) => `${count} project${count === 1 ? "" : "s"}`;
+  const topTools = [...new Set(codingProjects.flatMap((project) => project.tools || []))].slice(0, 8);
 
   if (state.aboutMode === "journey") {
-    const timeline = [...allProjects]
-      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
-      .slice(0, 5);
+    const experienceAreas = [
+      {
+        mark: "SE",
+        title: "Solutions Engineering",
+        copy: "Connect technical requirements, user needs, and practical implementation paths."
+      },
+      {
+        mark: "DA",
+        title: "Data Analysis",
+        copy: "Structure complex information and communicate findings clearly enough to guide decisions."
+      },
+      {
+        mark: "SD",
+        title: "Software Development",
+        copy: "Turn analytical ideas into usable applications, simulations, and local-first tools."
+      }
+    ];
 
-    els.aboutModePanel.innerHTML = timeline.length
-      ? `
-        <div class="about-mode-content about-mode-content-journey">
-          <div class="about-panel-head">
-            <p class="about-panel-kicker">Build Timeline</p>
-            <p class="about-panel-subtle">Recent milestones and project evolution.</p>
-          </div>
-          <div class="about-timeline">
-          ${timeline
+    els.aboutModePanel.innerHTML = `
+      <div class="about-mode-content about-mode-content-journey">
+        <div class="about-panel-head">
+          <h4>Experience Across the Full Problem</h4>
+          <p class="about-panel-subtle">From understanding a system to analyzing evidence and delivering a working solution.</p>
+        </div>
+        <div class="about-experience-list">
+          ${experienceAreas
             .map(
-              (project) => `
-                <article class="about-timeline-row">
-                  <p class="about-timeline-year">${escapeHtml(String(project.year || "Recent"))}</p>
+              (area) => `
+                <article class="about-experience-row">
+                  <span class="about-experience-mark" aria-hidden="true">${area.mark}</span>
                   <div>
-                    <p class="about-timeline-title">${escapeHtml(project.title)}</p>
-                    <p class="about-timeline-copy">${escapeHtml(project.shortDescription || "")}</p>
+                    <p class="about-timeline-title">${area.title}</p>
+                    <p class="about-timeline-copy">${area.copy}</p>
                   </div>
                 </article>
               `
             )
             .join("")}
-          </div>
         </div>
-      `
-      : '<p class="muted">Project milestones will appear here as they are added.</p>';
-    return;
-  }
-
-  if (state.aboutMode === "now") {
+      </div>
+    `;
+  } else if (state.aboutMode === "now") {
     const activeProjects = codingProjects
       .filter((project) => String(project.status || "").toLowerCase() === "active")
       .slice(0, 3);
@@ -918,19 +1180,19 @@ function renderAboutModePanel() {
       ? `
         <div class="about-mode-content about-mode-content-now">
           <div class="about-panel-head">
-            <p class="about-panel-kicker">Currently Building</p>
-            <p class="about-panel-subtle">What is active right now.</p>
+            <h4>Active Project Work</h4>
+            <p class="about-panel-subtle">A concise view of what Jay is building now.</p>
           </div>
-          <div class="about-mode-cards">
+          <div class="about-project-list">
             ${activeProjects
               .map(
                 (project) => `
-                  <article class="about-mode-card">
-                    <p class="about-mode-card-title">${escapeHtml(project.title)}</p>
-                    <p class="about-mode-card-copy">${escapeHtml(project.aiSummary || project.shortDescription || "")}</p>
-                    <div class="about-mini-tags">
-                      ${(project.tools || []).slice(0, 3).map((tool) => `<span class="tag">${escapeHtml(tool)}</span>`).join("")}
+                  <article class="about-project-row">
+                    <div>
+                      <p class="about-mode-card-title">${escapeHtml(project.title)}</p>
+                      <p class="about-mode-card-copy">${escapeHtml(project.aiSummary || project.shortDescription || "")}</p>
                     </div>
+                    <span class="about-project-status">${escapeHtml(project.status || "Active")}</span>
                   </article>
                 `
               )
@@ -938,54 +1200,27 @@ function renderAboutModePanel() {
           </div>
         </div>
       `
-      : '<p class="muted">Current build focus will be listed here.</p>';
-    return;
+      : '<p class="muted">Current project details will appear here when available.</p>';
+  } else {
+    els.aboutModePanel.innerHTML = `
+      <div class="about-mode-content about-mode-content-overview">
+        <div class="about-panel-head">
+          <h4>Built Across Disciplines</h4>
+          <p class="about-panel-subtle">Engineering judgment, analytical clarity, and hands-on product execution.</p>
+        </div>
+        <ul class="about-focus-list">
+          <li><strong>Frame the system</strong><span>Understand constraints, requirements, and the people using the result.</span></li>
+          <li><strong>Analyze the evidence</strong><span>Use data to identify patterns, tradeoffs, and useful next steps.</span></li>
+          <li><strong>Ship the solution</strong><span>Build clear applications that make the analysis easier to use.</span></li>
+        </ul>
+        <div class="about-tool-cloud" aria-label="Tools used across portfolio projects">
+          ${topTools.length
+            ? topTools.map((tool) => `<span class="tag">${escapeHtml(tool)}</span>`).join("")
+            : '<span class="muted">Project tools will appear here when available.</span>'}
+        </div>
+      </div>
+    `;
   }
-
-  const toolCounts = codingProjects.reduce((accumulator, project) => {
-    (project.tools || []).forEach((tool) => {
-      accumulator[tool] = (accumulator[tool] || 0) + 1;
-    });
-    return accumulator;
-  }, {});
-
-  const topTools = Object.entries(toolCounts)
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 6);
-
-  const getToolDepthLabel = (count) => {
-    if (count >= 3) {
-      return "Core stack";
-    }
-    if (count === 2) {
-      return "Frequent usage";
-    }
-    return "Focused usage";
-  };
-
-  els.aboutModePanel.innerHTML = `
-    <div class="about-mode-content about-mode-content-overview">
-      <div class="about-panel-head">
-        <p class="about-panel-kicker">Tech Stack</p>
-        <p class="about-panel-subtle">Tools used across shipped projects.</p>
-      </div>
-      <div class="about-tech-grid">
-        ${topTools.length
-          ? topTools
-              .map(
-                ([tool, count]) => `
-                  <article class="about-tech-card">
-                    <p class="about-tech-title">${escapeHtml(tool)}</p>
-                    <p class="about-tech-meta">${getToolDepthLabel(count)}</p>
-                    <p class="about-tech-count">${formatProjectCount(count)}</p>
-                  </article>
-                `
-              )
-              .join("")
-          : '<p class="muted">Tool usage data appears once projects are loaded.</p>'}
-      </div>
-    </div>
-  `;
 
   const modeContent = els.aboutModePanel.querySelector(".about-mode-content");
   if (modeContent) {
@@ -1001,22 +1236,20 @@ function populateAboutHighlights() {
   }
 
   const allProjects = [...state.data.codingProjects, ...state.data.solidworksProjects];
-  const featuredCount = allProjects.filter((project) => project.featured).length;
-  const topTools = [...new Set(state.data.codingProjects.flatMap((project) => project.tools || []))].slice(0, 3);
-  const formatProjectCount = (count) => `${count} project${count === 1 ? "" : "s"}`;
+  const projectCount = new Intl.NumberFormat().format(allProjects.length);
 
   els.aboutHighlights.innerHTML = `
     <article class="insight-card">
-      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#9733;</span>Featured Projects</p>
-      <p class="insight-value">${escapeHtml(formatProjectCount(featuredCount))}</p>
+      <p class="insight-label">Based In</p>
+      <p class="insight-value">${escapeHtml(state.data.profile.location || "Toronto, ON")}</p>
     </article>
     <article class="insight-card">
-      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#9881;</span>Main Stack</p>
-      <p class="insight-value">${escapeHtml(topTools.join(", ") || "Custom stack")}</p>
+      <p class="insight-label">Portfolio</p>
+      <p class="insight-value">${escapeHtml(projectCount)} documented builds</p>
     </article>
     <article class="insight-card">
-      <p class="insight-label"><span class="insight-icon" aria-hidden="true">&#10024;</span>Current Focus</p>
-      <p class="insight-value">ML apps and full-stack tools</p>
+      <p class="insight-label">Perspective</p>
+      <p class="insight-value">Engineering + analytics</p>
     </article>
   `;
 }
@@ -1827,7 +2060,7 @@ function handleExplorerItemMenuAction(action) {
   }
 
   if (action === "download") {
-    setExplorerStatusMessage(`Downloading ${targetEntry.name}...`);
+    setExplorerStatusMessage(`Downloading ${targetEntry.name}…`);
     return;
   }
 
@@ -2457,7 +2690,7 @@ function renderExplorer() {
                 <span class="explorer-entry-icon ${entry.kind === "folder" ? "is-folder" : "is-file"}" aria-hidden="true"></span>
                 ${
                   isRenaming
-                    ? `<input class="explorer-rename-input" type="text" value="${escapeHtml(renameValue)}" data-explorer-rename-input="${escapeHtml(entry.id)}" aria-label="Rename ${escapeHtml(entry.name)}" />`
+                    ? `<input class="explorer-rename-input" type="text" name="file_name" autocomplete="off" value="${escapeHtml(renameValue)}" data-explorer-rename-input="${escapeHtml(entry.id)}" aria-label="Rename ${escapeHtml(entry.name)}" />`
                     : `<span class="explorer-entry-text">${escapeHtml(entry.name)}</span>`
                 }
               </span>
@@ -2535,6 +2768,7 @@ function bindWallpaperPicker() {
     button.addEventListener("click", () => {
       const wallpaper = button.getAttribute("data-wallpaper");
       setWallpaper(wallpaper);
+      announceDesktop(`Selected ${button.querySelector("span")?.textContent || "wallpaper"}.`);
     });
   });
 
@@ -3559,9 +3793,9 @@ function runWordAction(action) {
 }
 
 function toggleWordFullscreen() {
-  const isWordFullscreen = document.fullscreenElement?.id === "detailWindow";
+  const isWordFullscreen = document.getElementById("detailWindow")?.classList.contains("is-maximized");
   toggleWindowFullscreenById("detailWindow");
-  setWordStatusMessage(isWordFullscreen ? "Exited full screen." : "Entering full screen.");
+  setWordStatusMessage(isWordFullscreen ? "Restored the document window." : "Maximized the document window.");
 }
 
 function toggleWindowFullscreenById(windowId) {
@@ -3570,25 +3804,77 @@ function toggleWindowFullscreenById(windowId) {
     return;
   }
 
-  const isThisWindowFullscreen = document.fullscreenElement === windowEl;
-  if (isThisWindowFullscreen) {
-    document.exitFullscreen?.();
+  if (windowEl.hidden) {
+    openWindow(windowId);
+  }
+
+  if (windowEl.classList.contains("is-maximized")) {
+    restoreWindowBounds(windowEl);
+    announceDesktop(`Restored ${windowEl.dataset.windowTitle || "window"}.`);
     return;
   }
 
-  if (document.fullscreenElement) {
-    const exitPromise = document.exitFullscreen?.();
-    if (exitPromise && typeof exitPromise.finally === "function") {
-      exitPromise.finally(() => {
-        windowEl.requestFullscreen?.();
-      });
-    } else {
-      windowEl.requestFullscreen?.();
-    }
+  const rect = windowEl.getBoundingClientRect();
+  windowEl.dataset.restoreBounds = JSON.stringify({
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`
+  });
+  ["left", "top", "width", "height"].forEach((property) => windowEl.style.removeProperty(property));
+  windowEl.classList.add("is-maximized");
+  windowEl.dataset.windowState = "normal";
+  updateMaximizeButton(windowEl);
+  bringWindowToFront(windowEl);
+  syncPortfolioSidebarGeometry(windowEl);
+  announceDesktop(`Maximized ${windowEl.dataset.windowTitle || "window"}.`);
+}
+
+function restoreWindowBounds(windowEl) {
+  let bounds = null;
+  try {
+    bounds = JSON.parse(windowEl.dataset.restoreBounds || "null");
+  } catch (error) {
+    bounds = null;
+  }
+
+  windowEl.classList.remove("is-maximized");
+  if (bounds) {
+    windowEl.style.setProperty("left", bounds.left, "important");
+    windowEl.style.setProperty("top", bounds.top, "important");
+    windowEl.style.setProperty("width", bounds.width, "important");
+    windowEl.style.setProperty("height", bounds.height, "important");
+  }
+  delete windowEl.dataset.restoreBounds;
+  positionWindow(windowEl, Number.parseFloat(windowEl.style.left || "12"), Number.parseFloat(windowEl.style.top || "12"));
+  updateMaximizeButton(windowEl);
+  syncPortfolioSidebarGeometry(windowEl);
+}
+
+function updateMaximizeButton(windowEl) {
+  const button = windowEl.querySelector(".maximize-window");
+  if (!button) {
     return;
   }
 
-  windowEl.requestFullscreen?.();
+  const isMaximized = windowEl.classList.contains("is-maximized");
+  button.setAttribute("aria-label", `${isMaximized ? "Restore" : "Maximize"} ${windowEl.dataset.windowTitle || "window"}`);
+  button.setAttribute("aria-pressed", String(isMaximized));
+}
+
+function announceDesktop(message) {
+  if (!els.desktopStatus) {
+    return;
+  }
+
+  window.clearTimeout(state.feedbackTimer);
+  els.desktopStatus.textContent = message;
+  els.desktopStatus.classList.remove("is-visible");
+  void els.desktopStatus.offsetWidth;
+  els.desktopStatus.classList.add("is-visible");
+  state.feedbackTimer = window.setTimeout(() => {
+    els.desktopStatus.classList.remove("is-visible");
+  }, 1800);
 }
 
 function insertWordTable(rows, cols) {
@@ -3768,12 +4054,14 @@ function bindSettingsToggles() {
     state.preferences.windowGlow = event.target.checked;
     applyPreferenceClasses();
     savePreferences();
+    announceDesktop(`Window depth ${event.target.checked ? "enabled" : "reduced"}.`);
   });
 
   els.toggleLargeText?.addEventListener("change", (event) => {
     state.preferences.largeText = event.target.checked;
     applyPreferenceClasses();
     savePreferences();
+    announceDesktop(`Large readability text ${event.target.checked ? "enabled" : "disabled"}.`);
   });
 }
 
@@ -3823,6 +4111,10 @@ function startClocks() {
         <span class="taskbar-clock-time">${timeText}</span>
         <span class="taskbar-clock-date">${dateText}</span>
       `;
+      els.taskbarClock.setAttribute(
+        "aria-label",
+        `Open calendar. ${now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" })}, ${timeText}`
+      );
     }
 
     if (els.lockScreenTime) {
@@ -3845,8 +4137,11 @@ function startClocks() {
 function toggleStartMenu() {
   if (els.startMenu.hidden) {
     hideContextMenu();
+    closeCalendar();
     els.startMenu.hidden = false;
     els.startButton.setAttribute("aria-expanded", "true");
+    document.getElementById("mobileAppsButton")?.setAttribute("aria-expanded", "true");
+    document.getElementById("mobileAppsButton")?.classList.add("is-shell-active");
     const startAppList = els.startMenu.querySelector(".start-app-list");
     const startTiles = els.startMenu.querySelector(".start-tiles");
     if (startAppList) {
@@ -3855,7 +4150,9 @@ function toggleStartMenu() {
     if (startTiles) {
       startTiles.scrollTop = 0;
     }
-    els.startSearch?.focus();
+    if (window.matchMedia("(min-width: 821px)").matches) {
+      els.startSearch?.focus();
+    }
     return;
   }
 
@@ -3869,6 +4166,8 @@ function closeStartMenu() {
 
   els.startMenu.hidden = true;
   els.startButton?.setAttribute("aria-expanded", "false");
+  document.getElementById("mobileAppsButton")?.setAttribute("aria-expanded", "false");
+  document.getElementById("mobileAppsButton")?.classList.remove("is-shell-active");
 
   if (els.startSearch) {
     els.startSearch.value = "";
@@ -3945,11 +4244,18 @@ function openWindow(windowId, options = {}) {
 
   hideContextMenu();
   closeStartMenu();
+  closeCalendar();
 
   const wasHidden = windowEl.hidden;
   windowEl.hidden = false;
+  windowEl.dataset.windowState = "normal";
+  windowEl.classList.remove("is-minimized");
 
-  if (wasHidden || !windowEl.dataset.positioned) {
+  if (options.trigger instanceof HTMLElement) {
+    state.windowTriggers.set(windowId, options.trigger);
+  }
+
+  if (!windowEl.dataset.positioned) {
     initializeWindowPosition(windowEl);
   }
 
@@ -3960,8 +4266,19 @@ function openWindow(windowId, options = {}) {
   if (windowId === "portfolioAiWindow") {
     initializePortfolioAssistant();
     window.setTimeout(() => {
-      els.aiSearchInput?.focus();
+      els.aiSearchInput?.focus({ preventScroll: true });
+      const content = windowEl.querySelector(".window-content");
+      if (content) {
+        content.scrollTop = 0;
+        content.scrollLeft = 0;
+      }
     }, 70);
+    window.setTimeout(() => {
+      const content = windowEl.querySelector(".window-content");
+      if (content) {
+        content.scrollTop = 0;
+      }
+    }, 260);
     if (state.data) {
       warmPortfolioAssistantKnowledge();
     }
@@ -3970,6 +4287,12 @@ function openWindow(windowId, options = {}) {
   if (windowId === "detailWindow") {
     window.setTimeout(() => {
       focusWordEditor();
+    }, 70);
+  }
+
+  if (windowId !== "portfolioAiWindow" && windowId !== "detailWindow") {
+    window.setTimeout(() => {
+      windowEl.focus({ preventScroll: true });
     }, 70);
   }
 
@@ -3985,21 +4308,128 @@ function openWindow(windowId, options = {}) {
 
   bringWindowToFront(windowEl);
   markWindowVisited(windowId);
+  announceDesktop(`${wasHidden ? "Opened" : "Focused"} ${windowEl.dataset.windowTitle || "window"}.`);
 }
 
-function closeWindow(windowId) {
+function toggleWindowFromLauncher(windowId, trigger) {
+  const windowEl = document.getElementById(windowId);
+  if (!windowEl) {
+    return;
+  }
+
+  closeStartMenu();
+  if (!windowEl.hidden) {
+    minimizeWindow(windowId, { trigger });
+    return;
+  }
+
+  openWindow(windowId, { trigger });
+}
+
+function minimizeWindow(windowId, options = {}) {
   const windowEl = document.getElementById(windowId);
   if (!windowEl || windowEl.hidden) {
     return;
   }
 
+  if (options.trigger instanceof HTMLElement) {
+    state.windowTriggers.set(windowId, options.trigger);
+  }
+
   windowEl.hidden = true;
+  windowEl.dataset.windowState = "minimized";
+  windowEl.classList.add("is-minimized");
+  if (state.activeWindowId === windowId) {
+    syncActiveWindow();
+  }
+  updateWindowButtons();
+  announceDesktop(`Minimized ${windowEl.dataset.windowTitle || "window"}.`);
+
+  const trigger = options.trigger || state.windowTriggers.get(windowId);
+  if (trigger?.isConnected) {
+    window.setTimeout(() => trigger.focus({ preventScroll: true }), 0);
+  }
+}
+
+function closeWindow(windowId) {
+  const windowEl = document.getElementById(windowId);
+  if (!windowEl || windowEl.dataset.windowState === "closed") {
+    return;
+  }
+
+  if (windowEl.classList.contains("is-maximized")) {
+    restoreWindowBounds(windowEl);
+  }
+
+  windowEl.hidden = true;
+  windowEl.dataset.windowState = "closed";
+  windowEl.classList.remove("is-minimized", "is-maximized");
+  delete windowEl.dataset.restoreBounds;
+  updateMaximizeButton(windowEl);
 
   if (state.activeWindowId === windowId) {
     syncActiveWindow();
   }
 
   updateWindowButtons();
+  announceDesktop(`Closed ${windowEl.dataset.windowTitle || "window"}.`);
+
+  const trigger = state.windowTriggers.get(windowId);
+  if (trigger?.isConnected) {
+    window.setTimeout(() => trigger.focus({ preventScroll: true }), 0);
+  }
+}
+
+function enhanceUiSemantics() {
+  document.querySelectorAll(".window").forEach((windowEl) => {
+    windowEl.setAttribute("role", "dialog");
+    windowEl.setAttribute("aria-modal", "false");
+    windowEl.setAttribute("tabindex", "-1");
+    windowEl.dataset.windowState = windowEl.hidden ? "closed" : "normal";
+
+    const controls = windowEl.querySelector(".window-controls");
+    if (controls && !controls.querySelector(".maximize-window")) {
+      const maximizeButton = document.createElement("button");
+      maximizeButton.className = "window-control maximize-window";
+      maximizeButton.type = "button";
+      maximizeButton.textContent = "+";
+      maximizeButton.setAttribute("data-fullscreen-window", windowEl.id);
+      maximizeButton.setAttribute("aria-label", `Maximize ${windowEl.dataset.windowTitle || "window"}`);
+      controls.insertBefore(maximizeButton, controls.querySelector(".close-window"));
+    }
+
+    if (!windowEl.querySelector(".window-resize-handle")) {
+      ["n", "ne", "e", "se", "s", "sw", "w", "nw"].forEach((direction) => {
+        const handle = document.createElement("span");
+        handle.className = `window-resize-handle resize-${direction}`;
+        handle.dataset.resizeDirection = direction;
+        handle.setAttribute("aria-hidden", "true");
+        windowEl.appendChild(handle);
+      });
+    }
+  });
+
+  document.querySelectorAll("img:not([width])").forEach((image) => {
+    let width = 24;
+    let height = 24;
+
+    if (image.classList.contains("desktop-icon-image")) {
+      width = 48;
+      height = 48;
+    } else if (image.classList.contains("wallpaper-preview")) {
+      width = 160;
+      height = 90;
+    } else if (image.classList.contains("lock-screen-logo")) {
+      width = 94;
+      height = 94;
+    } else if (image.classList.contains("contact-avatar") || image.classList.contains("profile-card-avatar")) {
+      width = 72;
+      height = 72;
+    }
+
+    image.setAttribute("width", String(width));
+    image.setAttribute("height", String(height));
+  });
 }
 
 function bringWindowToFront(windowEl) {
@@ -4007,10 +4437,18 @@ function bringWindowToFront(windowEl) {
   state.activeWindowId = windowEl.id;
   windowEl.style.zIndex = String(state.zIndex);
   updateWindowButtons();
+  syncPortfolioSidebarGeometry(windowEl);
 }
 
 function initializeWindowPosition(windowEl) {
-  positionWindow(windowEl, Number(windowEl.dataset.x || 260), Number(windowEl.dataset.y || 80));
+  const taskbarHeight = document.querySelector(".taskbar")?.offsetHeight || 72;
+  const windowWidth = windowEl.offsetWidth || 720;
+  const windowHeight = windowEl.offsetHeight || 560;
+  const windowIndex = Math.max(0, state.windows.indexOf(windowEl.id));
+  const cascade = windowEl.id === "aboutWindow" ? 0 : (windowIndex % 5) * 16;
+  const centeredLeft = (window.innerWidth - windowWidth) / 2 + cascade;
+  const centeredTop = (window.innerHeight - taskbarHeight - windowHeight) / 2 + cascade * 0.45;
+  positionWindow(windowEl, centeredLeft, centeredTop);
 }
 
 function positionWindow(windowEl, left, top) {
@@ -4020,9 +4458,10 @@ function positionWindow(windowEl, left, top) {
   const maxLeft = Math.max(12, window.innerWidth - windowWidth - 12);
   const maxTop = Math.max(12, window.innerHeight - taskbarHeight - windowHeight - 12);
 
-  windowEl.style.left = `${clamp(left, 12, maxLeft)}px`;
-  windowEl.style.top = `${clamp(top, 12, maxTop)}px`;
+  windowEl.style.setProperty("left", `${clamp(left, 12, maxLeft)}px`, "important");
+  windowEl.style.setProperty("top", `${clamp(top, 12, maxTop)}px`, "important");
   windowEl.dataset.positioned = "true";
+  syncPortfolioSidebarGeometry(windowEl);
 }
 
 function syncWindowPositions() {
@@ -4032,8 +4471,12 @@ function syncWindowPositions() {
       return;
     }
 
-    if (window.innerWidth <= 720) {
-      positionWindow(windowEl, 12, 70 + index * 18);
+    if (window.innerWidth <= DESKTOP_BREAKPOINT) {
+      return;
+    }
+
+    if (windowEl.classList.contains("is-maximized")) {
+      syncPortfolioSidebarGeometry(windowEl);
       return;
     }
 
@@ -4058,6 +4501,88 @@ function updateWindowButtons() {
   updateWindowDepthState();
   updateTaskbarWindows();
   updateDesktopShortcutState();
+  syncReferenceShell();
+}
+
+function syncReferenceShell() {
+  const activeWindowId = state.activeWindowId;
+  const hasOpenWindow = getOpenWindows().length > 0;
+  const activeWindow = activeWindowId ? document.getElementById(activeWindowId) : null;
+  const hasContextSidebar = Boolean(
+    activeWindow && !activeWindow.hidden && CONTEXT_SIDEBAR_WINDOWS.has(activeWindowId)
+  );
+  document.body.classList.toggle("has-open-window", hasOpenWindow);
+  document.body.classList.toggle("has-context-sidebar", hasContextSidebar);
+
+  document.querySelectorAll(".window.has-context-sidebar").forEach((windowEl) => {
+    windowEl.classList.remove("has-context-sidebar");
+  });
+  if (hasContextSidebar) {
+    activeWindow.classList.add("has-context-sidebar");
+    syncPortfolioSidebarGeometry(activeWindow);
+  } else {
+    syncPortfolioSidebarGeometry(null);
+  }
+
+  let activeSection = "";
+  if (activeWindowId === "aboutWindow") {
+    activeSection = state.aboutMode === "journey" ? "experience" : "about";
+  } else if (activeWindowId === "codingWindow") {
+    activeSection = "software";
+  } else if (activeWindowId === "solidworksWindow") {
+    activeSection = "cad";
+  } else if (activeWindowId === "contactWindow") {
+    activeSection = "contact";
+  }
+
+  document.querySelectorAll("[data-shell-section]").forEach((button) => {
+    const isActive = Boolean(activeSection) && button.getAttribute("data-shell-section") === activeSection;
+    button.classList.toggle("is-shell-active", isActive);
+    if (button.matches(".portfolio-nav-button, .mobile-dock-nav button")) {
+      if (isActive) {
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    }
+  });
+
+  document.querySelectorAll(".quick-launch-button[data-open-window]").forEach((button) => {
+    const windowId = button.getAttribute("data-open-window");
+    const windowEl = document.getElementById(windowId);
+    const windowState = windowEl?.dataset.windowState;
+    button.classList.toggle("is-active", windowId === activeWindowId);
+    button.classList.toggle("is-open", windowState === "normal" || windowState === "minimized");
+    button.classList.toggle("is-minimized", windowState === "minimized");
+  });
+}
+
+function syncPortfolioSidebarGeometry(windowEl) {
+  const sidebar = document.querySelector(".portfolio-side-nav");
+  if (!sidebar) {
+    return;
+  }
+
+  if (
+    !windowEl ||
+    windowEl.hidden ||
+    state.activeWindowId !== windowEl.id ||
+    !CONTEXT_SIDEBAR_WINDOWS.has(windowEl.id) ||
+    window.innerWidth <= DESKTOP_BREAKPOINT
+  ) {
+    sidebar.style.removeProperty("left");
+    sidebar.style.removeProperty("top");
+    sidebar.style.removeProperty("height");
+    sidebar.style.removeProperty("z-index");
+    return;
+  }
+
+  const rect = windowEl.getBoundingClientRect();
+  const titlebarHeight = windowEl.querySelector(".window-titlebar")?.offsetHeight || 56;
+  sidebar.style.left = `${rect.left}px`;
+  sidebar.style.top = `${rect.top + titlebarHeight}px`;
+  sidebar.style.height = `${Math.max(0, rect.height - titlebarHeight)}px`;
+  sidebar.style.zIndex = String(Number(windowEl.style.zIndex || state.zIndex) + 1);
 }
 
 function updateWindowDepthState() {
@@ -4082,7 +4607,9 @@ function updateTaskbarWindows() {
     return;
   }
 
-  const openWindows = getOpenWindows();
+  const openWindows = state.windows
+    .map((windowId) => document.getElementById(windowId))
+    .filter((windowEl) => windowEl && windowEl.dataset.windowState !== "closed");
 
   els.taskbarWindows.innerHTML = openWindows
     .map((windowEl) => {
@@ -4102,8 +4629,9 @@ function updateTaskbarWindows() {
   els.taskbarWindows.querySelectorAll("[data-focus-window]").forEach((button) => {
     button.addEventListener("click", () => {
       const targetId = button.getAttribute("data-focus-window");
-      if (targetId === state.activeWindowId) {
-        closeWindow(targetId);
+      const targetWindow = document.getElementById(targetId);
+      if (targetId === state.activeWindowId && targetWindow && !targetWindow.hidden) {
+        minimizeWindow(targetId, { trigger: button });
         return;
       }
 
@@ -4114,11 +4642,29 @@ function updateTaskbarWindows() {
 
 function updateDesktopShortcutState() {
   syncBonusVisibility();
-  document.querySelectorAll(".desktop-icon").forEach((icon) => {
+  document
+    .querySelectorAll(
+      ".desktop-icon[data-open-window], .quick-launch-button[data-open-window], .start-entry[data-open-window], .start-tile[data-open-window], .mobile-dock-nav [data-open-window]"
+    )
+    .forEach((icon) => {
     const targetId = icon.getAttribute("data-open-window");
     const targetWindow = document.getElementById(targetId);
-    icon.classList.toggle("is-open", Boolean(targetWindow && !targetWindow.hidden));
-  });
+    const windowState = targetWindow?.dataset.windowState;
+    icon.classList.toggle("is-open", windowState === "normal" || windowState === "minimized");
+    icon.classList.toggle("is-minimized", windowState === "minimized");
+    icon.classList.toggle("is-active", Boolean(targetWindow && !targetWindow.hidden && targetId === state.activeWindowId));
+    });
+
+  if (els.taskbarSearchButton) {
+    const assistantWindow = document.getElementById("portfolioAiWindow");
+    const assistantState = assistantWindow?.dataset.windowState;
+    els.taskbarSearchButton.classList.toggle("is-open", assistantState === "normal" || assistantState === "minimized");
+    els.taskbarSearchButton.classList.toggle("is-minimized", assistantState === "minimized");
+    els.taskbarSearchButton.classList.toggle(
+      "is-active",
+      Boolean(assistantWindow && !assistantWindow.hidden && state.activeWindowId === "portfolioAiWindow")
+    );
+  }
 }
 
 function getOpenWindows() {
@@ -4172,7 +4718,7 @@ function hideContextMenu() {
 function setWallpaper(wallpaperPath) {
   state.currentWallpaper = wallpaperPath;
   if (els.wallpaper) {
-    els.wallpaper.style.backgroundImage = `url("${wallpaperPath}")`;
+    els.wallpaper.style.setProperty("background-image", `url("${wallpaperPath}")`, "important");
   }
   updateWallpaperSelection();
 }
@@ -4191,15 +4737,16 @@ function hydrateProfile() {
   const { profile } = state.data;
   const mailtoHref = `mailto:${profile.email}`;
 
-  document.title = `${profile.name} Desktop Portfolio`;
+  document.title = `${profile.name} | Mechanical Engineering & Data Analytics`;
   els.startUserName.textContent = profile.name;
-  els.aboutSummary.textContent = `${profile.name} is a ${profile.title}. ${profile.tagline}`;
+  const profileSummary =
+    profile.summary || `${profile.name} is a ${profile.title} with ${String(profile.tagline || "").replace(/^experience in\s+/i, "experience in ")}`;
+  els.aboutSummary.textContent = profileSummary;
 
   const quickFacts = [
-    `Location: ${profile.location}`,
-    `Coding projects: ${state.data.codingProjects.length}`,
-    `CAD projects: ${state.data.solidworksProjects.length}`,
-    "Theme: Windows desktop-inspired portfolio OS"
+    "Mechanical engineering perspective applied to analytical and software problems.",
+    "Experience spanning solutions engineering, software development, and data analysis.",
+    "Projects designed around useful outputs, clear interfaces, and reproducible workflows."
   ];
 
   els.profileQuickFacts.innerHTML = quickFacts.map((fact) => `<li>${escapeHtml(fact)}</li>`).join("");
@@ -4225,6 +4772,7 @@ function hydrateProfile() {
   if (els.aboutResumeLink) {
     els.aboutResumeLink.href = profile.resumeUrl || "#";
   }
+  void syncResumeAvailability(profile.resumeUrl);
   if (els.aboutLinkedinLink) {
     els.aboutLinkedinLink.href = profile.linkedin || "#";
   }
@@ -4236,6 +4784,28 @@ function hydrateProfile() {
   }
   if (els.copyEmailButton) {
     els.copyEmailButton.dataset.email = profile.email;
+  }
+}
+
+async function syncResumeAvailability(resumeUrl) {
+  const resumeLinks = [els.aboutResumeLink, els.resumeLink].filter(Boolean);
+  resumeLinks.forEach((link) => {
+    link.hidden = true;
+  });
+
+  if (!resumeUrl || resumeUrl === "#") {
+    return;
+  }
+
+  try {
+    const response = await fetch(resumeUrl, { method: "HEAD" });
+    const contentType = response.headers.get("content-type") || "";
+    const isPdf = response.ok && contentType.toLowerCase().includes("application/pdf");
+    resumeLinks.forEach((link) => {
+      link.hidden = !isPdf;
+    });
+  } catch (error) {
+    // Keep unavailable résumé actions hidden instead of sending visitors to a broken link.
   }
 }
 
@@ -4600,14 +5170,14 @@ function renderSolidworksProjects() {
         `
           )
           .join("")
-      : '<tr><td colspan="4">No CAD projects are available yet.</td></tr>';
+      : '<tr><td class="cad-empty-cell" colspan="4"><strong>Design library ready</strong><span>CAD case studies are being prepared for publication.</span></td></tr>';
 
     bindProjectActionButtons(els.solidworksTableBody);
   }
 
   els.solidworksProjectsGrid.innerHTML = projects.length
     ? projects.map((project) => projectCardMarkup(project, false)).join("")
-    : '<p class="muted">No CAD projects are available yet.</p>';
+    : '<section class="cad-empty-state"><span class="cad-empty-mark" aria-hidden="true">CAD</span><div><h3>Manufacturing work, documented clearly.</h3><p>Detailed model breakdowns, drawings, and design decisions will appear here as each case study is prepared.</p></div></section>';
 
   bindProjectActionButtons(els.solidworksProjectsGrid);
 }
@@ -4836,7 +5406,7 @@ function projectLinkButtons(project) {
 
 function bindPortfolioAssistantControls() {
   els.taskbarSearchButton?.addEventListener("click", () => {
-    openWindow("portfolioAiWindow", { trigger: els.taskbarSearchButton });
+    toggleWindowFromLauncher("portfolioAiWindow", els.taskbarSearchButton);
   });
 
   els.aiSearchSuggestions?.addEventListener("click", (event) => {
@@ -4936,6 +5506,7 @@ function renderPortfolioAssistantMessages() {
     return;
   }
 
+  els.aiSearchMessages.setAttribute("aria-busy", String(state.portfolioAssistant.isLoading));
   const messages = state.portfolioAssistant.messages || [];
   if (!messages.length) {
     els.aiSearchMessages.innerHTML =
@@ -4965,7 +5536,7 @@ function renderPortfolioAssistantMessages() {
   const thinkingMarkup = state.portfolioAssistant.isLoading
     ? `
       <article class="ai-search-message is-assistant is-thinking">
-        <p class="ai-search-message-text">Thinking through your portfolio context...</p>
+        <p class="ai-search-message-text">Thinking through your portfolio context…</p>
         <div class="ai-search-thinking-dots" aria-hidden="true">
           <span></span>
           <span></span>
@@ -4981,7 +5552,8 @@ function renderPortfolioAssistantMessages() {
       message.isNew = false;
     }
   });
-  els.aiSearchMessages.scrollTop = els.aiSearchMessages.scrollHeight;
+  const isInitialGreeting = messages.length === 1 && messages[0]?.role === "assistant" && !state.portfolioAssistant.isLoading;
+  els.aiSearchMessages.scrollTop = isInitialGreeting ? 0 : els.aiSearchMessages.scrollHeight;
 }
 
 function renderPortfolioAssistantSource(source) {
@@ -5041,8 +5613,12 @@ async function submitPortfolioAssistantQuery(query) {
 
   pushPortfolioAssistantMessage({ role: "user", text: trimmedQuery });
   state.portfolioAssistant.isLoading = true;
+  if (els.aiSearchSend) {
+    els.aiSearchSend.disabled = true;
+    els.aiSearchSend.textContent = "Checking…";
+  }
   renderPortfolioAssistantMessages();
-  setPortfolioAssistantStatus("Checking the portfolio and linked project docs...");
+  setPortfolioAssistantStatus("Checking the portfolio and linked project docs…");
 
   try {
     const response = await buildPortfolioAssistantResponse(trimmedQuery);
@@ -5076,6 +5652,10 @@ async function submitPortfolioAssistantQuery(query) {
     setPortfolioAssistantStatus("Something went wrong while loading portfolio context.");
   } finally {
     state.portfolioAssistant.isLoading = false;
+    if (els.aiSearchSend) {
+      els.aiSearchSend.disabled = false;
+      els.aiSearchSend.textContent = "Ask";
+    }
     renderPortfolioAssistantMessages();
     els.aiSearchInput?.focus();
   }
@@ -6098,7 +6678,7 @@ function trimAssistantText(value, maxLength = 240) {
   if (text.length <= maxLength) {
     return text;
   }
-  return `${text.slice(0, maxLength - 1).trimEnd()}...`;
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function executePortfolioAssistantAction(action) {

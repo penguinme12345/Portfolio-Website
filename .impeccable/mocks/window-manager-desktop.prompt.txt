@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: implementation reference for a portfolio operating-system desktop at 1440x900
+Primary request: Redesign the attached portfolio desktop into a polished, functional window-manager interface while preserving its warm neutral and coral aesthetic. Show the full desktop with an About window automatically open, but leave enough desktop visible to discover many app launchers.
+Reference image: use the attached screenshot only as evidence of the current information and problems; replace its oversized split launcher panel and repeated sidebar.
+Scene/backdrop: calm warm-gray desktop canvas, matte and softly lit, no wallpaper spectacle.
+Window: one centered resizable About application window around 860x610 with a slim 56px titlebar, clearly visible red close, yellow minimize, and green maximize controls at top left; subtle resize affordances at edges/corners; grounded down-right shadow. The About window has NO navigation sidebar. Inside: a wide alpine landscape crop, large "Jay Patel", role "Mechanical Engineering student and Data Analyst", two concise fact panels, and readable supporting copy.
+Desktop launchers: show a well-spaced grid of 12 large app icons outside the window, using one consistent thin-stroke icon family and visible labels: About, Files, Projects, Analytics, CAD, Finance, GitHub, Docs, AI Search, Contact, Settings, LoL Demo. Some icons can sit on the left and some on the right so the desktop feels populated without becoming crowded.
+Dock: compact floating white dock centered at the bottom, about 620px wide, with key app icons, tiny open-state dots, clock at far right, and no giant full-width launcher overlay.
+Style/medium: premium buildable web UI comp, Swiss rational hierarchy mixed with friendly desktop OS behavior, Figtree-like geometric typography, crisp vector interface icons.
+Color palette: #ededed warm desktop, #ffffff windows, #111111 text, #6f6f77 secondary text, #e95141 coral selection/accent, plus traffic-light red/yellow/green only in window controls.
+Interaction cues: a second partially visible window behind About to imply multi-window stacking; active app icon shows a subtle coral underline/dot; titlebars visibly draggable; edge cursor/resize grip implied but discreet.
+Text (verbatim where shown): "PORTFOLIO // ABOUT", "Jay Patel", "Mechanical Engineering student and Data Analyst", "Data-driven applications", "Toronto, ON".
+Constraints: no left sidebar inside About; only file/project browser windows may use a sidebar; no glassmorphism, no dark navy panels, no oversized Start menu, no card-inside-card nesting, no gradients, no tiny unreadable labels, no fake technical jargon, no browser frame, no watermark.

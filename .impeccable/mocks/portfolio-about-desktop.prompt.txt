@@ -1,0 +1,2 @@
+High-fidelity desktop portfolio UI comp adapted from the user's supplied reference. Preserve its warm gray canvas, large centered white app window, left sidebar, three exterior launch icons, bold black grotesk typography, coral accent, thin gray rules, and floating bottom dock. Map the content to Jay Patel's About view using only supplied portfolio facts.
+

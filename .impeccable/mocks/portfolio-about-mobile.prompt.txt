@@ -1,0 +1,2 @@
+390x844 responsive About view for the approved portfolio shell. Remove the exterior rail and sidebar, keep the compact titlebar, wide alpine image, bold identity block, stacked facts, supplied summary, and five-item floating bottom dock with safe-area spacing.
+
