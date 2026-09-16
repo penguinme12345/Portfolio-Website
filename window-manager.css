@@ -198,6 +198,97 @@ body.reference-ui {
   height: 0.42rem;
 }
 
+.reference-ui .desktop-playground {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  width: min(38rem, calc(100vw - 28rem));
+  height: min(28rem, calc(100dvh - 15rem));
+  min-width: 22rem;
+  min-height: 18rem;
+  transform: translate(-50%, -48%);
+  opacity: 1;
+  transition: opacity 220ms ease-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reference-ui.has-open-window .desktop-playground {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -46%) scale(0.98);
+}
+
+.reference-ui .physics-canvas {
+  display: block;
+  width: 100%;
+  height: calc(100% - 2.4rem);
+  border-radius: 1.5rem;
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.reference-ui .physics-canvas:active {
+  cursor: grabbing;
+}
+
+.reference-ui .physics-canvas:focus-visible {
+  outline: 0.18rem solid rgb(233 81 65 / 0.58) !important;
+  outline-offset: 0.3rem !important;
+}
+
+.reference-ui .physics-playground-meta {
+  display: flex;
+  min-height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #66666d;
+  font-size: 0.7rem;
+  font-weight: 730;
+  letter-spacing: 0.035em;
+}
+
+.reference-ui .physics-playground-meta p {
+  margin: 0;
+}
+
+.reference-ui .physics-reset {
+  min-height: 1.85rem;
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #343439;
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
+  text-decoration-color: #b9b9bd;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18rem;
+}
+
+.reference-ui .physics-reset:hover,
+.reference-ui .physics-reset:focus-visible {
+  background: #ffffff;
+  color: #a52e25;
+  text-decoration-color: var(--wm-accent);
+}
+
+.reference-ui .physics-surface {
+  translate: var(--physics-x, 0) var(--physics-y, 0);
+  rotate: var(--physics-rotation, 0deg);
+  transform-origin: center;
+  will-change: translate, rotate;
+}
+
+.reference-ui .dock-physics-item {
+  translate: 0 var(--dock-lift, 0);
+  scale: var(--dock-scale, 1);
+  transform-origin: center bottom;
+  transition: scale 140ms ease-out, translate 140ms ease-out;
+}
+
 .reference-ui .window {
   --wm-window-width: 54rem;
   --wm-window-height: 40.5rem;
@@ -1831,6 +1922,7 @@ body.is-window-dragging * {
   }
 
   .reference-ui .desktop-icons,
+  .reference-ui .desktop-playground,
   .reference-ui .portfolio-side-nav,
   .window-resize-handle {
     display: none !important;
@@ -2024,6 +2116,18 @@ body.is-window-dragging * {
   .reference-ui .desktop-icon-search-glyph,
   .reference-ui .window,
   .reference-ui .portfolio-side-nav {
+    transition: none !important;
+  }
+
+  .reference-ui .desktop-playground {
+    transition: none !important;
+  }
+
+  .reference-ui .physics-surface,
+  .reference-ui .dock-physics-item {
+    translate: none !important;
+    rotate: none !important;
+    scale: 1 !important;
     transition: none !important;
   }
 }

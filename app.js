@@ -292,6 +292,9 @@ const state = {
 const els = {
   wallpaper: document.getElementById("wallpaper"),
   desktopShell: document.getElementById("desktopShell"),
+  desktopPlayground: document.getElementById("desktopPlayground"),
+  physicsCanvas: document.getElementById("physicsCanvas"),
+  physicsReset: document.getElementById("physicsReset"),
   lockScreen: document.getElementById("lockScreen"),
   unlockButton: document.getElementById("unlockButton"),
   lockScreenTime: document.getElementById("lockScreenTime"),
@@ -441,6 +444,8 @@ async function init() {
   bindStartMenu();
   bindCalendar();
   bindStartSearch();
+  bindDesktopPhysicsPlayground();
+  bindPhysicsMicroInteractions();
   bindWindowDragging();
   bindWindowResizing();
   bindGlobalShortcuts();
@@ -807,6 +812,704 @@ function closeCalendar() {
 
   els.calendarPopover.hidden = true;
   els.taskbarClock?.setAttribute("aria-expanded", "false");
+}
+
+function bindDesktopPhysicsPlayground() {
+  const canvas = els.physicsCanvas;
+  const playground = els.desktopPlayground;
+  const resetButton = els.physicsReset;
+  const context = canvas?.getContext("2d", { alpha: true });
+  if (!canvas || !playground || !context) {
+    return;
+  }
+
+  const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const palette = [
+    { fill: "#171719", stroke: "#171719" },
+    { fill: "#27272a", stroke: "#27272a" },
+    { fill: "#ffffff", stroke: "#c9c9cd" },
+    { fill: "#b8b8bd", stroke: "#a9a9ae" },
+    { fill: "#e95141", stroke: "#ce4438" },
+    { fill: "#f2bd45", stroke: "#d8a52d" },
+    { fill: "#67c759", stroke: "#4fac43" }
+  ];
+  const pointer = {
+    active: false,
+    x: 0,
+    y: 0,
+    previousX: 0,
+    previousY: 0,
+    velocityX: 0,
+    velocityY: 0,
+    lastMoveAt: 0
+  };
+
+  let width = 0;
+  let height = 0;
+  let pixelRatio = 1;
+  let balls = [];
+  let frameId = 0;
+  let previousFrameAt = performance.now();
+  let freeFlightUntil = 0;
+
+  const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  function createSeededRandom() {
+    let seed = 19052003;
+    return () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  }
+
+  function colorForBall(index, random) {
+    if (index % 13 === 0) return palette[4];
+    if (index % 17 === 0) return palette[5];
+    if (index % 19 === 0) return palette[6];
+    if (index % 5 === 0) return palette[2];
+    if (index % 4 === 0) return palette[3];
+    return random() > 0.48 ? palette[0] : palette[1];
+  }
+
+  function buildCluster() {
+    const random = createSeededRandom();
+    const count = clampValue(Math.round(width / 18), 24, 34);
+    const baseRadius = clampValue(width * 0.025, 11.5, 17);
+    const centerX = width / 2;
+    const centerY = height / 2 - 3;
+
+    balls = Array.from({ length: count }, (_, index) => {
+      const radius = baseRadius * (0.72 + random() * 0.68);
+      const angle = index * 2.3999632297 + random() * 0.16;
+      const distance = index === 0 ? 0 : baseRadius * 2.06 * Math.sqrt(index);
+      const homeX = clampValue(centerX + Math.cos(angle) * distance, radius + 8, width - radius - 8);
+      const homeY = clampValue(centerY + Math.sin(angle) * distance * 0.72, radius + 8, height - radius - 8);
+      const color = colorForBall(index, random);
+
+      return {
+        x: homeX,
+        y: homeY,
+        homeX,
+        homeY,
+        radius,
+        mass: radius * radius,
+        velocityX: motionPreference.matches ? 0 : (random() - 0.5) * 0.18,
+        velocityY: motionPreference.matches ? 0 : (random() - 0.5) * 0.18,
+        fill: color.fill,
+        stroke: color.stroke
+      };
+    });
+
+    separateOverlaps(5);
+  }
+
+  function resizeCanvas() {
+    const bounds = canvas.getBoundingClientRect();
+    const nextWidth = Math.max(1, bounds.width);
+    const nextHeight = Math.max(1, bounds.height);
+    if (Math.abs(nextWidth - width) < 1 && Math.abs(nextHeight - height) < 1 && balls.length) {
+      return;
+    }
+
+    width = nextWidth;
+    height = nextHeight;
+    pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * pixelRatio);
+    canvas.height = Math.round(height * pixelRatio);
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    buildCluster();
+    drawCluster();
+  }
+
+  function separateOverlaps(passes = 1) {
+    for (let pass = 0; pass < passes; pass += 1) {
+      for (let firstIndex = 0; firstIndex < balls.length; firstIndex += 1) {
+        for (let secondIndex = firstIndex + 1; secondIndex < balls.length; secondIndex += 1) {
+          const first = balls[firstIndex];
+          const second = balls[secondIndex];
+          let deltaX = second.x - first.x;
+          let deltaY = second.y - first.y;
+          let distance = Math.hypot(deltaX, deltaY);
+          const minimumDistance = first.radius + second.radius + 1;
+          if (distance >= minimumDistance) {
+            continue;
+          }
+
+          if (distance < 0.01) {
+            deltaX = 1;
+            deltaY = 0;
+            distance = 1;
+          }
+          const normalX = deltaX / distance;
+          const normalY = deltaY / distance;
+          const overlap = minimumDistance - distance;
+          const totalMass = first.mass + second.mass;
+          first.x -= normalX * overlap * (second.mass / totalMass);
+          first.y -= normalY * overlap * (second.mass / totalMass);
+          second.x += normalX * overlap * (first.mass / totalMass);
+          second.y += normalY * overlap * (first.mass / totalMass);
+        }
+      }
+    }
+  }
+
+  function resolveCollisions() {
+    for (let firstIndex = 0; firstIndex < balls.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < balls.length; secondIndex += 1) {
+        const first = balls[firstIndex];
+        const second = balls[secondIndex];
+        let deltaX = second.x - first.x;
+        let deltaY = second.y - first.y;
+        let distance = Math.hypot(deltaX, deltaY);
+        const minimumDistance = first.radius + second.radius + 0.7;
+        if (distance >= minimumDistance) {
+          continue;
+        }
+
+        if (distance < 0.01) {
+          deltaX = 1;
+          deltaY = 0;
+          distance = 1;
+        }
+        const normalX = deltaX / distance;
+        const normalY = deltaY / distance;
+        const overlap = minimumDistance - distance;
+        const totalMass = first.mass + second.mass;
+        first.x -= normalX * overlap * (second.mass / totalMass);
+        first.y -= normalY * overlap * (second.mass / totalMass);
+        second.x += normalX * overlap * (first.mass / totalMass);
+        second.y += normalY * overlap * (first.mass / totalMass);
+
+        const relativeX = second.velocityX - first.velocityX;
+        const relativeY = second.velocityY - first.velocityY;
+        const separatingSpeed = relativeX * normalX + relativeY * normalY;
+        if (separatingSpeed >= 0) {
+          continue;
+        }
+
+        const restitution = motionPreference.matches ? 0.28 : 0.72;
+        const impulse = (-(1 + restitution) * separatingSpeed) / (1 / first.mass + 1 / second.mass);
+        const impulseX = impulse * normalX;
+        const impulseY = impulse * normalY;
+        first.velocityX -= impulseX / first.mass;
+        first.velocityY -= impulseY / first.mass;
+        second.velocityX += impulseX / second.mass;
+        second.velocityY += impulseY / second.mass;
+      }
+    }
+  }
+
+  function applyPointerForce(ball, timeStep) {
+    if (!pointer.active) {
+      return;
+    }
+
+    let deltaX = ball.x - pointer.x;
+    let deltaY = ball.y - pointer.y;
+    let distance = Math.hypot(deltaX, deltaY);
+    const influenceRadius = 88 + ball.radius;
+    if (distance >= influenceRadius) {
+      return;
+    }
+
+    if (distance < 0.01) {
+      deltaX = 1;
+      deltaY = 0;
+      distance = 1;
+    }
+    const normalX = deltaX / distance;
+    const normalY = deltaY / distance;
+    const proximity = 1 - distance / influenceRadius;
+    const pointerSpeed = Math.min(18, Math.hypot(pointer.velocityX, pointer.velocityY));
+    const motionScale = motionPreference.matches ? 0.28 : 1;
+    const force = proximity * (0.58 + pointerSpeed * 0.17) * motionScale * timeStep;
+    ball.velocityX += normalX * force + pointer.velocityX * proximity * 0.045 * motionScale;
+    ball.velocityY += normalY * force + pointer.velocityY * proximity * 0.045 * motionScale;
+  }
+
+  function keepInsideBounds(ball) {
+    const restitution = motionPreference.matches ? 0.25 : 0.66;
+    if (ball.x - ball.radius < 3) {
+      ball.x = ball.radius + 3;
+      ball.velocityX = Math.abs(ball.velocityX) * restitution;
+    } else if (ball.x + ball.radius > width - 3) {
+      ball.x = width - ball.radius - 3;
+      ball.velocityX = -Math.abs(ball.velocityX) * restitution;
+    }
+
+    if (ball.y - ball.radius < 3) {
+      ball.y = ball.radius + 3;
+      ball.velocityY = Math.abs(ball.velocityY) * restitution;
+    } else if (ball.y + ball.radius > height - 3) {
+      ball.y = height - ball.radius - 3;
+      ball.velocityY = -Math.abs(ball.velocityY) * restitution;
+    }
+  }
+
+  function updateCluster(timeStep, frameTime) {
+    const isInFreeFlight = frameTime < freeFlightUntil;
+    const springStrength = isInFreeFlight ? 0.00008 : motionPreference.matches ? 0.006 : 0.0038;
+    const damping = Math.pow(motionPreference.matches ? 0.88 : 0.985, timeStep);
+
+    balls.forEach((ball) => {
+      ball.velocityX += (ball.homeX - ball.x) * springStrength * timeStep;
+      ball.velocityY += (ball.homeY - ball.y) * springStrength * timeStep;
+      applyPointerForce(ball, timeStep);
+      ball.velocityX *= damping;
+      ball.velocityY *= damping;
+      ball.x += ball.velocityX * timeStep;
+      ball.y += ball.velocityY * timeStep;
+      keepInsideBounds(ball);
+    });
+
+    resolveCollisions();
+    pointer.velocityX *= 0.72;
+    pointer.velocityY *= 0.72;
+  }
+
+  function drawCluster() {
+    context.clearRect(0, 0, width, height);
+    balls.forEach((ball) => {
+      context.save();
+      context.beginPath();
+      context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      context.shadowColor = "rgba(49, 45, 42, 0.16)";
+      context.shadowBlur = 12;
+      context.shadowOffsetX = 4;
+      context.shadowOffsetY = 7;
+      context.fillStyle = ball.fill;
+      context.fill();
+      context.shadowColor = "transparent";
+      context.lineWidth = ball.fill === "#ffffff" ? 1.2 : 0.8;
+      context.strokeStyle = ball.stroke;
+      context.stroke();
+      context.restore();
+    });
+  }
+
+  function isSceneActive() {
+    return (
+      window.innerWidth > DESKTOP_BREAKPOINT &&
+      !document.hidden &&
+      !document.body.classList.contains("has-open-window") &&
+      (!els.lockScreen || els.lockScreen.hidden)
+    );
+  }
+
+  function animate(frameTime) {
+    frameId = 0;
+    if (!isSceneActive()) {
+      return;
+    }
+
+    const timeStep = Math.min(1.8, Math.max(0.25, (frameTime - previousFrameAt) / 16.667));
+    previousFrameAt = frameTime;
+    updateCluster(timeStep, frameTime);
+    drawCluster();
+    frameId = window.requestAnimationFrame(animate);
+  }
+
+  function syncAnimationState() {
+    resizeCanvas();
+    if (isSceneActive()) {
+      if (!frameId) {
+        previousFrameAt = performance.now();
+        frameId = window.requestAnimationFrame(animate);
+      }
+      return;
+    }
+
+    if (frameId) {
+      window.cancelAnimationFrame(frameId);
+      frameId = 0;
+    }
+  }
+
+  function pointerPosition(event) {
+    const bounds = canvas.getBoundingClientRect();
+    return {
+      x: clampValue(event.clientX - bounds.left, 0, width),
+      y: clampValue(event.clientY - bounds.top, 0, height)
+    };
+  }
+
+  function updatePointer(event) {
+    const position = pointerPosition(event);
+    const now = performance.now();
+    const elapsed = Math.max(8, now - pointer.lastMoveAt);
+    const frameScale = 16.667 / elapsed;
+    pointer.previousX = pointer.x;
+    pointer.previousY = pointer.y;
+    pointer.x = position.x;
+    pointer.y = position.y;
+    pointer.velocityX = (pointer.x - pointer.previousX) * frameScale;
+    pointer.velocityY = (pointer.y - pointer.previousY) * frameScale;
+    pointer.lastMoveAt = now;
+    pointer.active = true;
+  }
+
+  function burstAt(x, y, strength = 5.4) {
+    const motionScale = motionPreference.matches ? 0.25 : 1;
+    balls.forEach((ball) => {
+      let deltaX = ball.x - x;
+      let deltaY = ball.y - y;
+      let distance = Math.hypot(deltaX, deltaY);
+      const radius = 170;
+      if (distance >= radius) {
+        return;
+      }
+      if (distance < 0.01) {
+        deltaX = 1;
+        deltaY = 0;
+        distance = 1;
+      }
+      const force = (1 - distance / radius) * strength * motionScale;
+      ball.velocityX += (deltaX / distance) * force;
+      ball.velocityY += (deltaY / distance) * force;
+    });
+    syncAnimationState();
+  }
+
+  function scatterCluster() {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const motionScale = motionPreference.matches ? 0.28 : 1;
+    balls.forEach((ball, index) => {
+      let deltaX = ball.x - centerX;
+      let deltaY = ball.y - centerY;
+      let distance = Math.hypot(deltaX, deltaY);
+      if (distance < 0.01) {
+        const fallbackAngle = index * 2.3999632297;
+        deltaX = Math.cos(fallbackAngle);
+        deltaY = Math.sin(fallbackAngle);
+        distance = 1;
+      }
+      const normalX = deltaX / distance;
+      const normalY = deltaY / distance;
+      const tangentX = -normalY;
+      const tangentY = normalX;
+      const speed = (20 + (index % 6) * 1.7) * motionScale;
+      const spin = ((index % 3) - 1) * 2.4 * motionScale;
+      ball.velocityX += normalX * speed + tangentX * spin;
+      ball.velocityY += normalY * speed + tangentY * spin;
+    });
+    freeFlightUntil = performance.now() + (motionPreference.matches ? 360 : 1450);
+    syncAnimationState();
+  }
+
+  function resetCluster({ announce = true } = {}) {
+    freeFlightUntil = 0;
+    balls.forEach((ball) => {
+      ball.x = ball.homeX;
+      ball.y = ball.homeY;
+      ball.velocityX = 0;
+      ball.velocityY = 0;
+    });
+    separateOverlaps(3);
+    drawCluster();
+    if (announce) {
+      announceDesktop("Physics cluster reset.");
+    }
+  }
+
+  canvas.addEventListener("pointerenter", (event) => {
+    const position = pointerPosition(event);
+    pointer.x = position.x;
+    pointer.y = position.y;
+    pointer.previousX = position.x;
+    pointer.previousY = position.y;
+    pointer.velocityX = 0;
+    pointer.velocityY = 0;
+    pointer.lastMoveAt = performance.now();
+    pointer.active = true;
+  });
+
+  canvas.addEventListener("pointermove", updatePointer);
+  canvas.addEventListener("pointerleave", () => {
+    pointer.active = false;
+    pointer.velocityX = 0;
+    pointer.velocityY = 0;
+  });
+  canvas.addEventListener("pointerdown", (event) => {
+    updatePointer(event);
+    canvas.setPointerCapture?.(event.pointerId);
+    burstAt(pointer.x, pointer.y, 6.2);
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    canvas.releasePointerCapture?.(event.pointerId);
+    if (event.pointerType !== "mouse") {
+      pointer.active = false;
+    }
+  });
+  canvas.addEventListener("pointercancel", () => {
+    pointer.active = false;
+  });
+  canvas.addEventListener("keydown", (event) => {
+    if (event.key === " " || event.code === "Space") {
+      event.preventDefault();
+      scatterCluster();
+      announceDesktop("Physics cluster scattered.");
+    } else if (event.key.toLowerCase() === "r") {
+      event.preventDefault();
+      resetCluster();
+    }
+  });
+
+  resetButton?.addEventListener("click", () => {
+    resetCluster();
+    canvas.focus({ preventScroll: true });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const isTypingTarget =
+      target instanceof HTMLElement &&
+      (target.isContentEditable || target.matches("input, textarea, select, button, a[href]"));
+    if (
+      event.code !== "Space" ||
+      event.defaultPrevented ||
+      isTypingTarget ||
+      !isSceneActive()
+    ) {
+      return;
+    }
+    event.preventDefault();
+    scatterCluster();
+    announceDesktop("Physics cluster launched.");
+  });
+
+  const bodyObserver = new MutationObserver(syncAnimationState);
+  bodyObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  const resizeObserver = new ResizeObserver(resizeCanvas);
+  resizeObserver.observe(playground);
+  document.addEventListener("visibilitychange", syncAnimationState);
+  window.addEventListener("resize", syncAnimationState);
+  motionPreference.addEventListener?.("change", () => {
+    resetCluster({ announce: false });
+    syncAnimationState();
+  });
+
+  resizeCanvas();
+  syncAnimationState();
+}
+
+function bindPhysicsMicroInteractions() {
+  const surfaceSelector = [
+    ".desktop-icon",
+    ".about-feature-image",
+    ".about-fact",
+    ".insight-card",
+    ".about-quick-link",
+    ".about-mode-button",
+    ".explorer-row",
+    ".project-card",
+    ".lol-metric-card",
+    ".lol-panel-block",
+    ".quick-row",
+    ".contact-action-row",
+    ".contact-sidecard",
+    ".ai-search-intro",
+    ".ai-search-chip",
+    ".word-toolbar-icon",
+    ".settings-toggle",
+    ".wallpaper-item",
+    ".cad-empty-state"
+  ].join(",");
+  const states = new Map();
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const coarsePointer = window.matchMedia("(pointer: coarse)");
+  let animationFrame = 0;
+  let pendingDockEvent = null;
+  let dockFrame = 0;
+
+  function strengthFor(element) {
+    if (element.matches(".desktop-icon")) return 7;
+    if (element.matches(".about-feature-image")) return 4.5;
+    if (element.matches(".project-card, .contact-sidecard, .ai-search-intro, .cad-empty-state")) return 3.6;
+    if (element.matches(".about-quick-link, .about-mode-button, .ai-search-chip, .word-toolbar-icon")) return 2.1;
+    return 2.8;
+  }
+
+  function getState(element) {
+    if (!states.has(element)) {
+      states.set(element, {
+        element,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        velocityX: 0,
+        velocityY: 0,
+        velocityRotation: 0,
+        targetX: 0,
+        targetY: 0,
+        targetRotation: 0,
+        returning: false
+      });
+    }
+    return states.get(element);
+  }
+
+  function scheduleSurfaceAnimation() {
+    if (!animationFrame) {
+      animationFrame = window.requestAnimationFrame(animateSurfaces);
+    }
+  }
+
+  function setSurfaceTarget(element, clientX, clientY) {
+    if (coarsePointer.matches || window.innerWidth <= DESKTOP_BREAKPOINT) {
+      return;
+    }
+    const bounds = element.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) {
+      return;
+    }
+    const state = getState(element);
+    const motionScale = reducedMotion.matches ? 0.24 : 1;
+    const strength = strengthFor(element) * motionScale;
+    const normalizedX = Math.max(-1, Math.min(1, (clientX - (bounds.left + bounds.width / 2)) / (bounds.width / 2)));
+    const normalizedY = Math.max(-1, Math.min(1, (clientY - (bounds.top + bounds.height / 2)) / (bounds.height / 2)));
+    state.targetX = normalizedX * strength;
+    state.targetY = normalizedY * strength * 0.72;
+    state.targetRotation = normalizedX * strength * 0.11;
+    state.returning = false;
+    element.classList.add("physics-surface");
+    scheduleSurfaceAnimation();
+  }
+
+  function releaseSurface(element) {
+    const state = states.get(element);
+    if (!state) {
+      return;
+    }
+    state.targetX = 0;
+    state.targetY = 0;
+    state.targetRotation = 0;
+    state.returning = true;
+    scheduleSurfaceAnimation();
+  }
+
+  function animateSurfaces() {
+    animationFrame = 0;
+    if (!states.size) {
+      return;
+    }
+    const spring = reducedMotion.matches ? 0.24 : 0.16;
+    const damping = reducedMotion.matches ? 0.58 : 0.72;
+    let hasMovingSurface = false;
+
+    states.forEach((state, element) => {
+      if (!element.isConnected) {
+        states.delete(element);
+        return;
+      }
+      state.velocityX = (state.velocityX + (state.targetX - state.x) * spring) * damping;
+      state.velocityY = (state.velocityY + (state.targetY - state.y) * spring) * damping;
+      state.velocityRotation =
+        (state.velocityRotation + (state.targetRotation - state.rotation) * spring) * damping;
+      state.x += state.velocityX;
+      state.y += state.velocityY;
+      state.rotation += state.velocityRotation;
+      element.style.setProperty("--physics-x", `${state.x.toFixed(2)}px`);
+      element.style.setProperty("--physics-y", `${state.y.toFixed(2)}px`);
+      element.style.setProperty("--physics-rotation", `${state.rotation.toFixed(3)}deg`);
+
+      const settled =
+        Math.abs(state.x - state.targetX) < 0.03 &&
+        Math.abs(state.y - state.targetY) < 0.03 &&
+        Math.abs(state.rotation - state.targetRotation) < 0.01 &&
+        Math.abs(state.velocityX) < 0.03 &&
+        Math.abs(state.velocityY) < 0.03;
+      if (settled && state.returning) {
+        element.classList.remove("physics-surface");
+        element.style.removeProperty("--physics-x");
+        element.style.removeProperty("--physics-y");
+        element.style.removeProperty("--physics-rotation");
+        states.delete(element);
+      } else if (!settled) {
+        hasMovingSurface = true;
+      }
+    });
+
+    if (hasMovingSurface) {
+      scheduleSurfaceAnimation();
+    }
+  }
+
+  document.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "mouse" && event.pointerType !== "pen") {
+      return;
+    }
+    const target = event.target instanceof Element ? event.target.closest(surfaceSelector) : null;
+    if (target instanceof HTMLElement) {
+      setSurfaceTarget(target, event.clientX, event.clientY);
+    }
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(surfaceSelector) : null;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const relatedTarget = event.relatedTarget;
+    if (!(relatedTarget instanceof Node) || !target.contains(relatedTarget)) {
+      releaseSurface(target);
+    }
+  });
+
+  function dockItems() {
+    return Array.from(
+      document.querySelectorAll(
+        ".taskbar :is(.taskbar-start, .taskbar-search, .quick-launch-button, .taskbar-window, .tray-icon-button)"
+      )
+    );
+  }
+
+  function resetDockPhysics() {
+    dockItems().forEach((item) => {
+      item.style.setProperty("--dock-scale", "1");
+      item.style.setProperty("--dock-lift", "0px");
+    });
+  }
+
+  function renderDockPhysics() {
+    dockFrame = 0;
+    const event = pendingDockEvent;
+    pendingDockEvent = null;
+    if (!event || window.innerWidth <= DESKTOP_BREAKPOINT || coarsePointer.matches) {
+      resetDockPhysics();
+      return;
+    }
+    const maximumScale = reducedMotion.matches ? 0.035 : 0.16;
+    dockItems().forEach((item) => {
+      item.classList.add("dock-physics-item");
+      const bounds = item.getBoundingClientRect();
+      const distance = Math.abs(event.clientX - (bounds.left + bounds.width / 2));
+      const proximity = Math.max(0, 1 - distance / 92);
+      item.style.setProperty("--dock-scale", (1 + proximity * maximumScale).toFixed(3));
+      item.style.setProperty("--dock-lift", `${(-proximity * (reducedMotion.matches ? 1.5 : 5.5)).toFixed(2)}px`);
+    });
+  }
+
+  document.querySelector(".taskbar")?.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "mouse" && event.pointerType !== "pen") {
+      return;
+    }
+    pendingDockEvent = event;
+    if (!dockFrame) {
+      dockFrame = window.requestAnimationFrame(renderDockPhysics);
+    }
+  });
+  document.querySelector(".taskbar")?.addEventListener("pointerleave", () => {
+    pendingDockEvent = null;
+    resetDockPhysics();
+  });
+  window.addEventListener("blur", () => {
+    states.forEach((state) => releaseSurface(state.element));
+    resetDockPhysics();
+  });
+  document.addEventListener("scroll", () => {
+    states.forEach((state) => releaseSurface(state.element));
+  }, true);
 }
 
 function bindStartSearch() {
