@@ -471,6 +471,162 @@ body.reference-ui {
   padding: 1rem 1.35rem;
 }
 
+/* About details: remove legacy dark-theme colors from the white reading surface. */
+.reference-ui #aboutWindow .about-details {
+  color: var(--wm-text);
+}
+
+.reference-ui #aboutWindow .about-mode-content {
+  gap: 1.4rem;
+}
+
+.reference-ui #aboutWindow .about-panel-head {
+  gap: 0.7rem;
+}
+
+.reference-ui #aboutWindow .about-panel-head h4 {
+  max-width: 18ch;
+  margin: 0;
+  color: #111113;
+  font-size: clamp(2rem, 3.4vw, 3.5rem);
+  font-weight: 840;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.reference-ui #aboutWindow .about-panel-subtle {
+  max-width: 68ch;
+  margin: 0;
+  color: #55555d;
+  font-size: clamp(1rem, 1.35vw, 1.18rem);
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.reference-ui #aboutWindow .about-focus-list li {
+  grid-template-columns: minmax(13rem, 0.38fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  padding: 1.15rem 0;
+  border-color: #c8c8cd;
+}
+
+.reference-ui #aboutWindow .about-focus-list strong {
+  color: #1b1b1f;
+  font-size: clamp(0.98rem, 1.15vw, 1.12rem);
+  font-weight: 790;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.reference-ui #aboutWindow .about-focus-list span {
+  max-width: 66ch;
+  color: #505057;
+  font-size: clamp(0.98rem, 1.15vw, 1.12rem);
+  font-weight: 560;
+  line-height: 1.5;
+}
+
+.reference-ui #aboutWindow .about-tool-cloud {
+  gap: 0.55rem 1.15rem;
+  margin-top: 0.2rem;
+}
+
+.reference-ui #aboutWindow :is(.about-tool-cloud, .about-mini-tags) .tag {
+  min-height: 1.9rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #515158;
+  font-size: 0.9rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.reference-ui #aboutWindow :is(.about-tool-cloud, .about-mini-tags) .tag + .tag::before {
+  margin-right: 0.6rem;
+  color: #a2a2a8;
+}
+
+.reference-ui #aboutWindow .insight-grid {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #cfcfd3;
+  border-radius: 0.9rem;
+  background: #f7f7f6;
+}
+
+.reference-ui #aboutWindow .insight-card {
+  min-height: 5.6rem;
+  padding: 1rem 1.35rem;
+  border: 0;
+  border-radius: 0;
+  background: #f7f7f6;
+}
+
+.reference-ui #aboutWindow .insight-card + .insight-card {
+  border-left: 1px solid #cfcfd3;
+}
+
+.reference-ui #aboutWindow .insight-label {
+  margin: 0;
+  color: #626269;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.reference-ui #aboutWindow .insight-value {
+  margin: 0.55rem 0 0;
+  color: #171719;
+  font-size: clamp(1rem, 1.35vw, 1.2rem);
+  font-weight: 760;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.reference-ui #aboutWindow :is(.about-experience-row, .about-project-row) {
+  padding: 1rem 0;
+  border-color: #c8c8cd;
+}
+
+.reference-ui #aboutWindow .about-experience-mark {
+  border: 1px solid #d0d0d4;
+  background: #f1f1f0;
+  color: #2b2b30;
+}
+
+.reference-ui #aboutWindow :is(.about-timeline-title, .about-mode-card-title) {
+  color: #1b1b1f;
+  font-size: 1rem;
+  font-weight: 790;
+  line-height: 1.35;
+}
+
+.reference-ui #aboutWindow :is(.about-timeline-copy, .about-mode-card-copy) {
+  margin-top: 0.35rem;
+  color: #55555d;
+  font-size: 0.96rem;
+  font-weight: 540;
+  line-height: 1.55;
+}
+
+.reference-ui #aboutWindow .about-project-status {
+  border: 1px solid #9ec9b7;
+  background: #eaf5f0;
+  color: #205c46;
+  font-weight: 780;
+}
+
+.reference-ui #aboutWindow .about-list li {
+  color: #303035;
+  font-size: 0.95rem;
+  font-weight: 540;
+  line-height: 1.55;
+}
+
 .reference-ui .portfolio-side-nav {
   right: auto;
   bottom: auto;
@@ -1718,6 +1874,22 @@ body.is-window-dragging * {
 
   .reference-ui .window-about .about-fact {
     min-height: 6.9rem;
+  }
+
+  .reference-ui #aboutWindow .about-panel-head h4 {
+    max-width: 15ch;
+    font-size: clamp(2.1rem, 10vw, 3.2rem);
+  }
+
+  .reference-ui #aboutWindow .about-focus-list li {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding: 1rem 0;
+  }
+
+  .reference-ui #aboutWindow .insight-card + .insight-card {
+    border-top: 1px solid #cfcfd3;
+    border-left: 0;
   }
 
   .reference-ui #myPcWindow .window-content,
